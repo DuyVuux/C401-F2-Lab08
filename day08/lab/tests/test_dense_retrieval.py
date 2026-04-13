@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from day08.lab.src.retrieval.rag_answer import retrieve_dense
+from src.retrieval.rag_answer import retrieve_dense
 
 def test_retrieve_dense_success(caplog):
     # Enable capturing of INFO and DEBUG logs
@@ -17,7 +17,7 @@ def test_retrieve_dense_success(caplog):
 
     # Giả định DB đã có dữ liệu mẫu (mocking chromadb và get_embedding để test output format)
     with patch('chromadb.PersistentClient') as mock_chroma, \
-         patch('day08.lab.src.indexing.index.get_embedding') as mock_embed:
+         patch('src.indexing.index.get_embedding') as mock_embed:
         
         # Setup mock behavior
         mock_embed.return_value = [0.1, 0.2, 0.3]

@@ -4,7 +4,7 @@ import os
 from typing import List, Dict, Any
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from day08.lab.src.retrieval.rag_answer import rerank_cross_encoder as rerank
+from src.retrieval.rag_answer import rerank_cross_encoder as rerank
 
 @pytest.fixture
 def mock_openai_rerank_response(monkeypatch):

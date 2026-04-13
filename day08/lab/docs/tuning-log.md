@@ -114,3 +114,10 @@ recency_penalty = 0.95 ^ years
 **New Value**: Updated `007_evaluation_metrics.md` (Scorecard) and created `008_indexing_metadata.md`, `009_grounded_generation_prompt.md`.
 **Reason**: Realigning implementation plans with Day 08 Lecture directives on Grounded Generation, Metadata Schema, and Scorecard Evaluation limits.
  -->
+
+## Evaluation Pipeline Execution (Sprint 4)
+**Changed Variable**: `score_faithfulness`, `score_answer_relevance`, `score_completeness`
+**New Value**: Implemented automated LLM-as-a-Judge using `gpt-4o-mini` for the scorecard.
+**Reason**: Enabled rapid and programmatic grading over testing files like `test_questions.json`, removing the manual scoring bottleneck.
+**Scorecard Variant (Delta comparison)**: Successfully ran tests passing through Dense vs Hybrid. See `ab_comparison.csv` for full question breakdown.
+**Comments**: Metrics are successfully producing grounded scores and penalize bad retrievals (like q10 Abstain evaluation).

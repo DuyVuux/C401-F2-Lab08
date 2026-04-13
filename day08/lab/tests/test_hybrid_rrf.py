@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from day08.lab.src.retrieval.rag_answer import compute_rrf
+from src.retrieval.rag_answer import compute_rrf
 
 def test_compute_rrf(caplog):
     caplog.set_level(logging.DEBUG)

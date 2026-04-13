@@ -29,7 +29,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from day08.lab.src.core.telemetry import diagnostic_decorator, apply_recency_penalty
+from src.core.telemetry import diagnostic_decorator, apply_recency_penalty
 
 load_dotenv()
 
@@ -59,7 +59,7 @@ def retrieve_dense(query: str, top_k: int = TOP_K_SEARCH) -> List[Dict[str, Any]
     logger.info(f"[DENSE_START] Payload: query=\"{query}\", top_k={top_k}")
     try:
         import chromadb
-        from day08.lab.src.indexing.index import get_embedding, CHROMA_DB_DIR
+        from src.indexing.index import get_embedding, CHROMA_DB_DIR
         
         client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
         collection = client.get_collection("rag_lab")
@@ -93,7 +93,7 @@ def retrieve_dense(query: str, top_k: int = TOP_K_SEARCH) -> List[Dict[str, Any]
         return []
 
 
-from day08.lab.src.retrieval.tokenizer import MaskingTokenizer
+from src.retrieval.tokenizer import MaskingTokenizer
 
 class SparseEngine:
     _instance = None
@@ -107,7 +107,7 @@ class SparseEngine:
     def _build_index(self):
         try:
             import chromadb
-            from day08.lab.src.indexing.index import CHROMA_DB_DIR
+            from src.indexing.index import CHROMA_DB_DIR
             from rank_bm25 import BM25Okapi
 
             client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))

@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
-from day08.lab.src.retrieval.rag_answer import retrieve_documents
+from src.retrieval.rag_answer import retrieve_documents
 
 def fake_retrieve_sparse(query, top_k):
     import time
@@ -25,9 +25,9 @@ def fake_rerank_cross_encoder(query, candidates, top_n):
     return result
 
 
-@patch('day08.lab.src.retrieval.rag_answer.retrieve_sparse', side_effect=fake_retrieve_sparse)
-@patch('day08.lab.src.retrieval.rag_answer.retrieve_dense', side_effect=fake_retrieve_dense)
-@patch('day08.lab.src.retrieval.rag_answer.rerank_cross_encoder', side_effect=fake_rerank_cross_encoder)
+@patch('src.retrieval.rag_answer.retrieve_sparse', side_effect=fake_retrieve_sparse)
+@patch('src.retrieval.rag_answer.retrieve_dense', side_effect=fake_retrieve_dense)
+@patch('src.retrieval.rag_answer.rerank_cross_encoder', side_effect=fake_rerank_cross_encoder)
 def test_retrieve_pipeline_e2e_normal(mock_rerank, mock_dense, mock_sparse, caplog):
     import logging
     caplog.set_level(logging.INFO)
@@ -57,7 +57,7 @@ def test_retrieve_pipeline_e2e_normal(mock_rerank, mock_dense, mock_sparse, capl
     assert "[PIPELINE_STAGE] RRF output size: 20 docs" in log_text # RRF top 20 max
     assert "[PIPELINE_FINAL] Pipeline Latency" in log_text
 
-@patch('day08.lab.src.retrieval.rag_answer.retrieve_sparse', side_effect=fake_retrieve_sparse)
+@patch('src.retrieval.rag_answer.retrieve_sparse', side_effect=fake_retrieve_sparse)
 def test_retrieve_pipeline_e2e_bypass(mock_sparse, caplog):
     import logging
     caplog.set_level(logging.INFO)
