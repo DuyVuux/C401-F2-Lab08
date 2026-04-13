@@ -26,5 +26,7 @@ __pycache__/
 !.env.example
 
 # OS
-.DS_Store
 Thumbs.db
+
+frontend/
+UX_UI_Architecture_Strategy.md
