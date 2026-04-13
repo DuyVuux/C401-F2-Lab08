@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
-
+from data_ingestor import *
 load_dotenv()
 
 # =============================================================================
@@ -60,75 +60,18 @@ def preprocess_document(raw_text: str, filepath: str) -> Dict[str, Any]:
 
     Gợi ý: dùng regex để parse dòng "Key: Value" ở đầu file.
     """
-    lines = raw_text.split("\n")
-    
-    metadata = {
-        "source": filepath,
-        "heading": "UNKNOWN",   # Dòng đầu tiên viết hoa
-        "section": "GENERAL",   # Các mục chia bởi ===
-        "department": "unknown",
-        "effective_date": "unknown",
-        "access": "internal",
-    }
-    
-    content_lines = []
-    first_line_checked = False
+    metadata = extract_metadata(raw_text, filepath)
 
-    for line in lines:
-        clean_line = line.strip()
-        if not clean_line:
-            content_lines.append("")
-            continue
+    content = remove_metadata_lines(raw_text)
 
-        # 1. XỬ LÝ HEADING (Dòng đầu tiên viết hoa toàn bộ)
-        if not first_line_checked:
-            if clean_line.isupper():
-                metadata["heading"] = clean_line
-            first_line_checked = True
-            # Vẫn đưa dòng này vào content để giữ tính toàn vẹn tài liệu
-            content_lines.append(clean_line)
-            continue
+    heading = extract_heading(content)
+    metadata["heading"] = heading
 
-        # 2. TRÍCH XUẤT METADATA HÀNH CHÍNH
-        is_metadata = False
-        meta_patterns = {
-            "department": r"^Department:",
-            "effective_date": r"^Effective Date:",
-            "access": r"^Access:",
-            "source": r"^Source:"
-        }
-        
-        for key, pattern in meta_patterns.items():
-            if re.match(pattern, clean_line, re.IGNORECASE):
-                metadata[key] = clean_line.split(":", 1)[1].strip()
-                is_metadata = True
-                break
-        
-        if is_metadata:
-            continue
+    cleaned_text = clean_text(content)
 
-        # 3. XỬ LÝ SECTION (Dựa trên pattern ===)
-        section_match = re.search(r"===\s*(.*?)\s*===", clean_line)
-        if section_match:
-            # Cập nhật section trong metadata (viết hoa để đồng bộ)
-            metadata["section"] = section_match.group(1).upper()
-            content_lines.append(clean_line)
-        else:
-            content_lines.append(clean_line)
-
-    # 4. CLEANING & NORMALIZATION (Sprint 4: Chunking Clinic)
-    full_text = "\n".join(content_lines)
-    
-    # Xóa citation rác 
-    cleaned_text = re.sub(r"/", "", full_text)
-    
-    # Chuẩn hóa khoảng trắng và xuống dòng
-    cleaned_text = re.sub(r" +", " ", cleaned_text)
-    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
-    
     return {
-        "text": cleaned_text.strip(),
-        "metadata": metadata
+        "text": cleaned_text,
+        "metadata": metadata,
     }
 
 # =============================================================================
@@ -239,7 +182,6 @@ def _split_by_size(
         start = end - overlap_chars
 
     return chunks
-
 
 # =============================================================================
 # STEP 3: EMBED + STORE
