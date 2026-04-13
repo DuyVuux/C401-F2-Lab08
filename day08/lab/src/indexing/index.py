@@ -195,30 +195,24 @@ def _split_by_size(
 
 def get_embedding(text: str) -> List[float]:
     """
-    Tạo embedding vector cho một đoạn text.
-
-    TODO Sprint 1:
-    Chọn một trong hai:
-
-    Option A — OpenAI Embeddings (cần OPENAI_API_KEY):
+    Tạo embedding vector cho một đoạn text sử dụng OpenAI.
+    """
+    try:
+        import os
         from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        response = client.embeddings.create(
-            input=text,
+        
+        # Initialize client directly inside or reuse globally
+        if not hasattr(get_embedding, "client"):
+            get_embedding.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            
+        response = get_embedding.client.embeddings.create(
+            input=[text],
             model="text-embedding-3-small"
         )
         return response.data[0].embedding
-
-    Option B — Sentence Transformers (chạy local, không cần API key):
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-        return model.encode(text).tolist()
-    """
-    raise NotImplementedError(
-        "TODO: Implement get_embedding().\n"
-        "Chọn Option A (OpenAI) hoặc Option B (Sentence Transformers) trong TODO comment."
-    )
-
+    except Exception as e:
+        print(f"Lỗi khi embed text: {e}")
+        return []
 
 def build_index(docs_dir: Path = DOCS_DIR, db_dir: Path = CHROMA_DB_DIR) -> None:
     """
