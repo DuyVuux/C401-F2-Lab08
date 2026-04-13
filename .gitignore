@@ -19,3 +19,6 @@ __pycache__/
 
 chroma_db
 .env
+
+frontend/
+UX_UI_Architecture_Strategy.md
