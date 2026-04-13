@@ -11,6 +11,8 @@ Design principle:
 """
 
 import re
+import json
+from pathlib import Path
 from typing import Dict, Any
 from datetime import datetime
 
@@ -168,3 +170,17 @@ def extract_heading(text: str) -> str:
 
     return "UNKNOWN"
 
+def save_processed_doc(doc, output_dir="data/processed"):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # lấy tên file từ source
+    source = doc["metadata"].get("source", "unknown")
+    filename = Path(source).stem + ".json"
+
+    output_path = output_dir / filename
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+
+    return output_path
