@@ -24,20 +24,70 @@ class PipelineEvaluator:
         # TODO [Sprint 4 - NDCG Metric Calculation]:
         raise NotImplementedError("Sẽ được triển khai tại Sprint 4")
 
-    def run_benchmark(self, dataset_path: str) -> Dict[str, float]:
+    def run_evaluation_scorecard(self, test_set: List[Dict], is_mock: bool = True) -> Dict[str, float]:
         """
-        Executes a rigorous, 4-metric evaluation pass over the entire pipeline.
+        Đánh giá điểm số Pipeline dựa trên tập Test cases.
+        """
+        logger.info(f"[INFO] [EVAL_START] Booting evaluation sequence on {len(test_set)} Ground-Truth samples...")
         
-        Args:
-            dataset_path (str): Relative path to benchmark ground truths (JSON/CSV).
+        total_f, total_r, total_cr, total_c = 0.0, 0.0, 0.0, 0.0
+        
+        for item in test_set:
+            q = item.get("query", "Unknown query")
+            if is_mock:
+                scores = item.get("mock_scores", {"faithfulness": 0, "relevance": 0, "recall": 0, "completeness": 0})
+            else:
+                # TODO: Tích hợp với OpenAI API LLM-as-a-judge
+                scores = {"faithfulness": 0, "relevance": 0, "recall": 0, "completeness": 0}
+                
+            f = scores.get("faithfulness", 0)
+            r = scores.get("relevance", 0)
+            c_r = scores.get("recall", 0)
+            c = scores.get("completeness", 0)
+            note = item.get("note", "")
             
-        Returns:
-            Dict[str, float]: Aggregate metrics (Precision, Recall, Faithfulness, Context Relevance).
+            logger.info(f'[DEBUG] [EVAL_SCORING] Query="{q}" | Faith: {f}/5 | Relevance: {r}/5 | Recall: {c_r}/5 | Complete: {c}/5 | Note: "{note}"')
+            
+            total_f += f
+            total_r += r
+            total_cr += c_r
+            total_c += c
+            
+        n = len(test_set) if len(test_set) > 0 else 1
+        avg_f = total_f / n
+        avg_r = total_r / n
+        avg_cr = total_cr / n
+        avg_c = total_c / n
+        
+        logger.info("[INFO] [EVAL_REPORT] ==============================")
+        logger.info("[INFO] [EVAL_REPORT] Metric Scorecard (Avg):")
+        logger.info(f"[INFO] [EVAL_REPORT] Faithfulness: {avg_f:.1f}/5.0")
+        logger.info(f"[INFO] [EVAL_REPORT] Answer Relevance: {avg_r:.1f}/5.0")
+        logger.info(f"[INFO] [EVAL_REPORT] Context Recall: {avg_cr:.1f}/5.0")
+        logger.info(f"[INFO] [EVAL_REPORT] Completeness: {avg_c:.1f}/5.0")
+        logger.info("[INFO] [EVAL_REPORT] ==============================")
+        
+        return {
+            "faithfulness": avg_f,
+            "relevance": avg_r,
+            "recall": avg_cr,
+            "completeness": avg_c
+        }
+
+    def compare_ab_variants(self, baseline_scores: Dict[str, float], variant_scores: Dict[str, float], changed_variables: List[str]):
         """
-        logger.info(f"[INFO] [BENCHMARK] Initiating run for dataset: {dataset_path}")
-        # TODO [Sprint 4 - Benchmark Flow]:
-        # - Đọc tập test case
-        # - Khởi tạo RAGPipeline và invoke cho từng câu hỏi
-        # - Tính toán 4 metrics chính
-        # - Hỗ trợ ghi log delta A/B để đưa kết quả ra Tuning Log
-        raise NotImplementedError("Sẽ được triển khai tại Sprint 4")
+        So sánh A/B Testing và xác thực nguyên tắc Rule 1-Biến thay đổi.
+        """
+        if len(changed_variables) > 1:
+            vars_str = ', '.join(changed_variables)
+            logger.warning(f"[WARN] A/B Rule Violation: You changed [{vars_str}]. Only 1 variable allowed!")
+            
+        var_name = changed_variables[0] if changed_variables else "None"
+        
+        improved_metrics = []
+        for k in variant_scores.keys():
+            if k in baseline_scores and variant_scores[k] > baseline_scores[k]:
+                improved_metrics.append(k)
+                
+        metrics_str = ', '.join(improved_metrics) if improved_metrics else "None"
+        logger.info(f"[INFO] [AB_TESTING] Changed Variable: {var_name}. Delta improvement detected in {metrics_str}.")

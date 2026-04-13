@@ -4,11 +4,18 @@
 
 # Grading questions — không public trước 17:00
 day08/lab/data/grading_questions.json
-
+day08/lab/docs/research/
+day08/lab/docs/prompt/
+day08/lab/docs/tuning-log.md
+day08/lab/docs/architecture.md
+.env
 
 .agent/
 .agents/
 venv
-chroma_db
+
 __pycache__/
+.venv
+
+chroma_db
 .env
