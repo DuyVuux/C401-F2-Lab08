@@ -276,32 +276,35 @@ def build_grounded_prompt(query: str, context_block: str) -> str:
     3. Citation: Gắn source/section khi có thể
     4. Short, clear, stable: Output ngắn, rõ, dùng bullet points
     """
-    prompt = f"""You are a strict, factual Internal IT & CS Helpdesk Assistant. 
-Your ONLY task is to answer the user's question based strictly on the Context provided below.
+    system_prompt = """You are an expert Internal CS & IT Helpdesk Assistant.
+Your primary goal is to help the user by answering their questions based ONLY on the provided CONTEXT.
 
-# RULES:
-1. GRACEFUL FALLBACK (ABSTAIN): 
-   - If the context DOES NOT contain the exact answer, you MUST reply EXACTLY with: "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này."
-   - DO NOT use your internal knowledge. DO NOT guess. DO NOT hallucinate.
-2. EVIDENCE-ONLY & CITATION: 
-   - Every claim you make MUST be backed by the context.
-   - You MUST cite the source using the bracketed number (e.g., [1], [2]) at the end of the relevant sentence.
-3. FORMATTING & TONE: 
-   - Be professional, empathetic, and clear.
-   - Use bullet points to breakdown complex policies, multiple steps, or conditions.
-   - Respond fully in Vietnamese.
+# INSTRUCTIONS (Follow strictly):
+1. ANALYZE & DEDUCE: Read the context and the user's question. You are allowed to make basic logical deductions to be helpful. 
+   - Example: Understand that "hôm qua" to "hôm nay" is 1 day (which is < 7 days).
+   - Example: Recognize that a "phần mềm" (software) is a "sản phẩm kỹ thuật số" or "license key".
+2. ANSWER CONFIDENTLY: If the context contains relevant information to address the core of the question, provide a clear, professional answer. 
+   - Use bullet points for readability.
+   - You MUST cite the source by adding the bracketed number (e.g., [1], [2]) at the end of the sentence containing the claim.
+3. GRACEFUL FALLBACK: IF AND ONLY IF the context is entirely irrelevant or lacks the critical details needed to answer, you must refuse.
+   - In this case, reply EXACTLY with: "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này."
+   - Do not guess or use external knowledge.
 
-# CONTEXT:
+Respond fully in Vietnamese."""
+
+    user_prompt = f"""# CONTEXT:
 {context_block}
 
 # USER QUESTION:
-{query}
+{query}"""
 
-# ANSWER:"""
-    return prompt
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
 
 
-def call_llm(prompt: str) -> str:
+def call_llm(messages: List[Dict[str, str]]) -> str:
     """
     Gọi LLM để sinh câu trả lời.
     """
@@ -312,7 +315,7 @@ def call_llm(prompt: str) -> str:
         # Gọi API với parameters khống chế hallucination
         response = client.chat.completions.create(
             model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             temperature=0,      # Temperature = 0 để khóa cứng tính sáng tạo, ép LLM nói sự thật
             max_tokens=512,     # Headroom (như đã thiết kế ở Token Budget)
         )
@@ -454,44 +457,81 @@ def compare_retrieval_strategies(query: str) -> None:
 # MAIN — Demo và Test
 # =============================================================================
 
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Sprint 2 + 3: RAG Answer Pipeline")
-    print("=" * 60)
-
-    # Test queries từ data/test_questions.json
-    test_queries = [
-        "SLA xử lý ticket P1 là bao lâu?",
-        "Khách hàng có thể yêu cầu hoàn tiền trong bao nhiêu ngày?",
-        "Ai phải phê duyệt để cấp quyền Level 3?",
-        "ERR-403-AUTH là lỗi gì?",  # Query không có trong docs → kiểm tra abstain
+def run_test():
+    print("🚀 TESTING...\n")
+    print("="*60)
+    
+    # Tạo Ảo ảnh (Mock Chunks) giả lập kết quả từ Retrieval
+    mock_chunks = [
+        {
+            "metadata": {"source": "data/docs/policy_refund_v4.txt", "section": "Điều 2", "effective_date": "2026-02-01"},
+            "text": "Khách hàng được quyền yêu cầu hoàn tiền khi đáp ứng đủ các điều kiện sau: Yêu cầu được gửi trong vòng 7 ngày làm việc kể từ thời điểm xác nhận đơn hàng."
+        },
+        {
+            "metadata": {"source": "data/docs/policy_refund_v4.txt", "section": "Điều 3", "effective_date": "2026-02-01"},
+            "text": "Sản phẩm thuộc danh mục hàng kỹ thuật số (license key, subscription) là ngoại lệ không được hoàn tiền."
+        }
     ]
 
-    print("\n--- Sprint 2: Test Baseline (Dense) ---")
-    for query in test_queries:
-        print(f"\nQuery: {query}")
-        try:
-            result = rag_answer(query, retrieval_mode="dense", verbose=True)
-            print(f"Answer: {result['answer']}")
-            print(f"Sources: {result['sources']}")
-        except NotImplementedError:
-            print("Chưa implement — hoàn thành TODO trong retrieve_dense() và call_llm() trước.")
-        except Exception as e:
-            print(f"Lỗi: {e}")
+    context_block = build_context_block(mock_chunks)
 
-    # Uncomment sau khi Sprint 3 hoàn thành:
-    # print("\n--- Sprint 3: So sánh strategies ---")
-    # compare_retrieval_strategies("Approval Matrix để cấp quyền là tài liệu nào?")
-    # compare_retrieval_strategies("ERR-403-AUTH")
+    # --- TEST CASE 1: CÓ THÔNG TIN (Kỳ vọng: Trả lời có trích dẫn) ---
+    query_1 = "Tôi mua license key phần mềm diệt virus hôm qua thì hôm nay có được hoàn tiền không?"
+    print(f"👉 TEST CASE 1 (Có thông tin):\nUser hỏi: {query_1}")
+    prompt_1 = build_grounded_prompt(query_1, context_block)
+    answer_1 = call_llm(prompt_1)
+    print(f"\n🤖 LLM Trả lời:\n{answer_1}\n")
+    print("-" * 60)
 
-    print("\n\nViệc cần làm Sprint 2:")
-    print("  1. Implement retrieve_dense() — query ChromaDB")
-    print("  2. Implement call_llm() — gọi OpenAI hoặc Gemini")
-    print("  3. Chạy rag_answer() với 3+ test queries")
-    print("  4. Verify: output có citation không? Câu không có docs → abstain không?")
+    # --- TEST CASE 2: KHÔNG CÓ THÔNG TIN (Kỳ vọng: Khởi động Abstain) ---
+    query_2 = "Làm thế nào để xin cấp quyền Level 3 (Admin)?"
+    print(f"👉 TEST CASE 2 (Ép Abstain - Chống Hallucination):\nUser hỏi: {query_2}")
+    prompt_2 = build_grounded_prompt(query_2, context_block)
+    answer_2 = call_llm(prompt_2)
+    print(f"\n🤖 LLM Trả lời:\n{answer_2}\n")
+    print("="*60)
 
-    print("\nViệc cần làm Sprint 3:")
-    print("  1. Chọn 1 trong 3 variants: hybrid, rerank, hoặc query transformation")
-    print("  2. Implement variant đó")
-    print("  3. Chạy compare_retrieval_strategies() để thấy sự khác biệt")
-    print("  4. Ghi lý do chọn biến đó vào docs/tuning-log.md")
+# if __name__ == "__main__":
+#     print("=" * 60)
+#     print("Sprint 2 + 3: RAG Answer Pipeline")
+#     print("=" * 60)
+
+#     # Test queries từ data/test_questions.json
+#     test_queries = [
+#         "SLA xử lý ticket P1 là bao lâu?",
+#         "Khách hàng có thể yêu cầu hoàn tiền trong bao nhiêu ngày?",
+#         "Ai phải phê duyệt để cấp quyền Level 3?",
+#         "ERR-403-AUTH là lỗi gì?",  # Query không có trong docs → kiểm tra abstain
+#     ]
+
+#     print("\n--- Sprint 2: Test Baseline (Dense) ---")
+#     for query in test_queries:
+#         print(f"\nQuery: {query}")
+#         try:
+#             result = rag_answer(query, retrieval_mode="dense", verbose=True)
+#             print(f"Answer: {result['answer']}")
+#             print(f"Sources: {result['sources']}")
+#         except NotImplementedError:
+#             print("Chưa implement — hoàn thành TODO trong retrieve_dense() và call_llm() trước.")
+#         except Exception as e:
+#             print(f"Lỗi: {e}")
+
+#     # Uncomment sau khi Sprint 3 hoàn thành:
+#     # print("\n--- Sprint 3: So sánh strategies ---")
+#     # compare_retrieval_strategies("Approval Matrix để cấp quyền là tài liệu nào?")
+#     # compare_retrieval_strategies("ERR-403-AUTH")
+
+#     print("\n\nViệc cần làm Sprint 2:")
+#     print("  1. Implement retrieve_dense() — query ChromaDB")
+#     print("  2. Implement call_llm() — gọi OpenAI hoặc Gemini")
+#     print("  3. Chạy rag_answer() với 3+ test queries")
+#     print("  4. Verify: output có citation không? Câu không có docs → abstain không?")
+
+#     print("\nViệc cần làm Sprint 3:")
+#     print("  1. Chọn 1 trong 3 variants: hybrid, rerank, hoặc query transformation")
+#     print("  2. Implement variant đó")
+#     print("  3. Chạy compare_retrieval_strategies() để thấy sự khác biệt")
+#     print("  4. Ghi lý do chọn biến đó vào docs/tuning-log.md")
+
+if __name__ == "__main__":
+    run_test()
