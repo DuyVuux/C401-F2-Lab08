@@ -2,10 +2,13 @@
   {
     "id": "gq01",
     "question": "SLA xử lý ticket P1 đã thay đổi như thế nào so với phiên bản trước?",
-    "answer": "SLA xử lý ticket P1 đã thay đổi như sau so với phiên bản trước:\n\n- Thời gian xử lý và khắc phục (resolution) đã giảm từ 6 giờ xuống còn 4 giờ [1].\n- Quy trình escalation tự động đã được thêm vào, cho phép tự động escalate lên Senior Engineer nếu không có phản hồi trong 10 phút [1].\n\nNhững thay đổi này có hiệu lực từ ngày 15 tháng 1 năm 2026 [2].",
+    "answer": "SLA xử lý ticket P1 đã thay đổi như sau so với phiên bản trước:\n\n- Thời gian xử lý và khắc phục (resolution) đã giảm từ 6 giờ xuống 4 giờ [1]. \n- Quy trình escalation tự động đã được thêm vào, cho phép tự động escalate lên Senior Engineer nếu không có phản hồi trong 10 phút [1]. \n\nNhững thay đổi này có hiệu lực từ ngày 15 tháng 1 năm 2026 [2].",
     "sources": [
       "support/sla-p1-2026.pdf"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq02",
@@ -13,9 +16,12 @@
     "answer": "Khi làm việc remote, bạn phải sử dụng VPN để kết nối với hệ thống nội bộ. Mỗi tài khoản được kết nối VPN trên tối đa 2 thiết bị cùng lúc [1][2].",
     "sources": [
       "hr/leave-policy-2026.pdf",
-      "support/helpdesk-faq.md",
-      "it/access-control-sop.md"
-    ]
+      "it/access-control-sop.md",
+      "support/helpdesk-faq.md"
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq03",
@@ -23,7 +29,10 @@
     "answer": "Đơn hàng mua trong chương trình Flash Sale và đã kích hoạt sản phẩm sẽ không được hoàn tiền. Cụ thể:\n\n- Đơn hàng đã áp dụng mã giảm giá đặc biệt theo chương trình khuyến mãi Flash Sale không đủ điều kiện hoàn tiền [1].\n- Sản phẩm đã được kích hoạt cũng không đủ điều kiện hoàn tiền [1].\n\nDo đó, bạn không thể yêu cầu hoàn tiền cho đơn hàng này.",
     "sources": [
       "policy/refund-v4.pdf"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq04",
@@ -31,7 +40,10 @@
     "answer": "Nếu bạn chọn nhận store credit thay vì hoàn tiền, bạn sẽ nhận được giá trị 110% so với số tiền hoàn [1].",
     "sources": [
       "policy/refund-v4.pdf"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq05",
@@ -39,43 +51,58 @@
     "answer": "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này.",
     "sources": [
       "it/access-control-sop.md"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq06",
     "question": "Lúc 2 giờ sáng xảy ra sự cố P1, on-call engineer cần cấp quyền tạm thời cho một engineer xử lý incident. Quy trình cụ thể như thế nào và quyền này tồn tại bao lâu?",
-    "answer": "Quy trình cấp quyền tạm thời cho engineer xử lý sự cố P1 vào lúc 2 giờ sáng như sau:\n\n1. **Cấp quyền tạm thời**:\n   - On-call IT Admin có thể cấp quyền tạm thời sau khi được Tech Lead phê duyệt bằng lời.\n\n2. **Thời gian tồn tại của quyền**:\n   - Quyền tạm thời này có hiệu lực tối đa trong 24 giờ.\n\n3. **Sau 24 giờ**:\n   - Phải có ticket chính thức hoặc quyền sẽ bị thu hồi tự động.\n   - Mọi quyền tạm thời phải được ghi log vào hệ thống Security Audit [1].",
+    "answer": "Quy trình cấp quyền tạm thời cho một engineer xử lý sự cố P1 vào lúc 2 giờ sáng như sau:\n\n1. **On-call IT Admin** có thể cấp quyền tạm thời sau khi được **Tech Lead** phê duyệt bằng lời.\n2. Quyền tạm thời này có thể tồn tại tối đa **24 giờ**.\n3. Sau 24 giờ, phải có **ticket chính thức** hoặc quyền sẽ bị **thu hồi tự động**.\n4. Tất cả quyền tạm thời phải được **ghi log** vào hệ thống **Security Audit** [1].",
     "sources": [
-      "it/access-control-sop.md",
-      "support/sla-p1-2026.pdf"
-    ]
+      "support/sla-p1-2026.pdf",
+      "it/access-control-sop.md"
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq07",
     "question": "Công ty sẽ phạt bao nhiêu nếu team IT vi phạm cam kết SLA P1?",
     "answer": "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này.",
     "sources": [
-      "support/helpdesk-faq.md",
-      "support/sla-p1-2026.pdf"
-    ]
+      "support/sla-p1-2026.pdf",
+      "support/helpdesk-faq.md"
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq08",
     "question": "Nhân viên phải báo trước bao nhiêu ngày để xin nghỉ phép năm? Con số này có giống với số ngày cần giấy tờ khi nghỉ ốm không?",
-    "answer": "- Nhân viên phải gửi yêu cầu nghỉ phép năm qua hệ thống HR Portal ít nhất 3 ngày làm việc trước ngày nghỉ [2].\n- Số ngày cần giấy tờ khi nghỉ ốm là nếu nghỉ trên 3 ngày liên tiếp [1]. \n\nVì vậy, con số này không giống nhau; yêu cầu báo trước cho nghỉ phép năm là 3 ngày, trong khi giấy tờ cho nghỉ ốm chỉ cần nếu nghỉ trên 3 ngày liên tiếp.",
+    "answer": "- Nhân viên phải gửi yêu cầu nghỉ phép năm qua hệ thống HR Portal ít nhất 3 ngày làm việc trước ngày nghỉ [2].\n- Số ngày cần giấy tờ khi nghỉ ốm là nếu nghỉ trên 3 ngày liên tiếp, cần có giấy tờ y tế từ bệnh viện [1].\n\nVậy, con số 3 ngày báo trước để xin nghỉ phép năm không giống với yêu cầu giấy tờ khi nghỉ ốm.",
     "sources": [
       "hr/leave-policy-2026.pdf",
       "it/access-control-sop.md"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq09",
     "question": "Mật khẩu tài khoản công ty cần đổi định kỳ không? Nếu có, hệ thống sẽ nhắc nhở trước bao nhiêu ngày và đổi qua đâu?",
-    "answer": "Có, mật khẩu tài khoản công ty cần được thay đổi định kỳ. Cụ thể:\n\n- Mật khẩu phải được thay đổi mỗi 90 ngày.\n- Hệ thống sẽ nhắc nhở bạn 7 ngày trước khi mật khẩu hết hạn.\n- Bạn có thể đổi mật khẩu qua portal SSO [1].",
+    "answer": "Có, mật khẩu tài khoản công ty cần được thay đổi định kỳ. Cụ thể:\n\n- Mật khẩu phải được thay đổi mỗi 90 ngày.\n- Hệ thống sẽ nhắc nhở 7 ngày trước khi mật khẩu hết hạn.\n- Bạn có thể đổi mật khẩu qua portal SSO [1].",
     "sources": [
-      "support/helpdesk-faq.md",
-      "it/access-control-sop.md"
-    ]
+      "it/access-control-sop.md",
+      "support/helpdesk-faq.md"
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   },
   {
     "id": "gq10",
@@ -83,6 +110,9 @@
     "answer": "Chính sách hoàn tiền hiện tại không áp dụng cho các đơn hàng đặt trước ngày 01/02/2026. Các đơn hàng đặt trước ngày có hiệu lực sẽ áp dụng theo chính sách hoàn tiền phiên bản 3 [1].",
     "sources": [
       "policy/refund-v4.pdf"
-    ]
+    ],
+    "chunks_retrieved": 3,
+    "retrieval_mode": "dense",
+    "timestamp": "2026-04-13T17:30:00"
   }
 ]
