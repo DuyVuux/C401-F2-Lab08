@@ -60,50 +60,76 @@ def preprocess_document(raw_text: str, filepath: str) -> Dict[str, Any]:
 
     Gợi ý: dùng regex để parse dòng "Key: Value" ở đầu file.
     """
-    lines = raw_text.strip().split("\n")
+    lines = raw_text.split("\n")
+    
     metadata = {
         "source": filepath,
-        "section": "",
+        "heading": "UNKNOWN",   # Dòng đầu tiên viết hoa
+        "section": "GENERAL",   # Các mục chia bởi ===
         "department": "unknown",
         "effective_date": "unknown",
         "access": "internal",
     }
+    
     content_lines = []
-    header_done = False
+    first_line_checked = False
 
     for line in lines:
-        if not header_done:
-            # TODO: Parse metadata từ các dòng "Key: Value"
-            # Ví dụ: "Source: policy/refund-v4.pdf" → metadata["source"] = "policy/refund-v4.pdf"
-            if line.startswith("Source:"):
-                metadata["source"] = line.replace("Source:", "").strip()
-            elif line.startswith("Department:"):
-                metadata["department"] = line.replace("Department:", "").strip()
-            elif line.startswith("Effective Date:"):
-                metadata["effective_date"] = line.replace("Effective Date:", "").strip()
-            elif line.startswith("Access:"):
-                metadata["access"] = line.replace("Access:", "").strip()
-            elif line.startswith("==="):
-                # Gặp section heading đầu tiên → kết thúc header
-                header_done = True
-                content_lines.append(line)
-            elif line.strip() == "" or line.isupper():
-                # Dòng tên tài liệu (toàn chữ hoa) hoặc dòng trống
-                continue
+        clean_line = line.strip()
+        if not clean_line:
+            content_lines.append("")
+            continue
+
+        # 1. XỬ LÝ HEADING (Dòng đầu tiên viết hoa toàn bộ)
+        if not first_line_checked:
+            if clean_line.isupper():
+                metadata["heading"] = clean_line
+            first_line_checked = True
+            # Vẫn đưa dòng này vào content để giữ tính toàn vẹn tài liệu
+            content_lines.append(clean_line)
+            continue
+
+        # 2. TRÍCH XUẤT METADATA HÀNH CHÍNH
+        is_metadata = False
+        meta_patterns = {
+            "department": r"^Department:",
+            "effective_date": r"^Effective Date:",
+            "access": r"^Access:",
+            "source": r"^Source:"
+        }
+        
+        for key, pattern in meta_patterns.items():
+            if re.match(pattern, clean_line, re.IGNORECASE):
+                metadata[key] = clean_line.split(":", 1)[1].strip()
+                is_metadata = True
+                break
+        
+        if is_metadata:
+            continue
+
+        # 3. XỬ LÝ SECTION (Dựa trên pattern ===)
+        section_match = re.search(r"===\s*(.*?)\s*===", clean_line)
+        if section_match:
+            # Cập nhật section trong metadata (viết hoa để đồng bộ)
+            metadata["section"] = section_match.group(1).upper()
+            content_lines.append(clean_line)
         else:
-            content_lines.append(line)
+            content_lines.append(clean_line)
 
-    cleaned_text = "\n".join(content_lines)
-
-    # TODO: Thêm bước normalize text nếu cần
-    # Gợi ý: bỏ ký tự đặc biệt thừa, chuẩn hóa dấu câu
-    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)  # max 2 dòng trống liên tiếp
-
+    # 4. CLEANING & NORMALIZATION (Sprint 4: Chunking Clinic)
+    full_text = "\n".join(content_lines)
+    
+    # Xóa citation rác 
+    cleaned_text = re.sub(r"/", "", full_text)
+    
+    # Chuẩn hóa khoảng trắng và xuống dòng
+    cleaned_text = re.sub(r" +", " ", cleaned_text)
+    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
+    
     return {
-        "text": cleaned_text,
-        "metadata": metadata,
+        "text": cleaned_text.strip(),
+        "metadata": metadata
     }
-
 
 # =============================================================================
 # STEP 2: CHUNK
