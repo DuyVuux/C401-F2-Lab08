@@ -22,7 +22,7 @@ import csv
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from rag_answer import rag_answer
+from day08.lab.src.retrieval.rag_answer import rag_answer
 
 # =============================================================================
 # CẤU HÌNH

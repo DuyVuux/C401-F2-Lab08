@@ -25,10 +25,11 @@ load_dotenv()
 # =============================================================================
 # CẤU HÌNH
 # =============================================================================
+BASE_DIR = Path(__file__).resolve().parents[2]
 
-DOCS_DIR = Path(__file__).parent / "data" / "docs"
-CHROMA_DB_DIR = Path(__file__).parent / "chroma_db"
-
+DOCS_DIR = BASE_DIR / "data" / "docs"
+CHROMA_DB_DIR = BASE_DIR / "chroma_db"
+print(DOCS_DIR)
 # TODO Sprint 1: Điều chỉnh chunk size và overlap theo quyết định của nhóm
 # Gợi ý từ slide: chunk 300-500 tokens, overlap 50-80 tokens
 CHUNK_SIZE = 400       # tokens (ước lượng bằng số ký tự / 4)
@@ -73,7 +74,8 @@ def preprocess_document(raw_text: str, filepath: str) -> Dict[str, Any]:
         "metadata": metadata,
     }
 
-    save_processed_doc(doc)
+    out_dir = save_processed_doc(doc)
+    print(out_dir)
 
     return doc
 
