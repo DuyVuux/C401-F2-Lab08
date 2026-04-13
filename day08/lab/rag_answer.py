@@ -24,6 +24,7 @@ Definition of Done Sprint 3:
 import os
 from typing import List, Dict, Any, Optional, Tuple
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -247,11 +248,18 @@ def build_context_block(chunks: List[Dict[str, Any]]) -> str:
         section = meta.get("section", "")
         score = chunk.get("score", 0)
         text = chunk.get("text", "")
+        
+        effective_date = meta.get("effective_date", "")
+        department = meta.get("department", "")
 
         # TODO: Tùy chỉnh format nếu muốn (thêm effective_date, department, ...)
         header = f"[{i}] {source}"
         if section:
             header += f" | {section}"
+        if effective_date and effective_date != "unknown":
+            header += f" | Effective Date: {effective_date}"
+        if department and department != "unknown":
+            header += f" | Dept: {department}"
         if score > 0:
             header += f" | score={score:.2f}"
 
@@ -262,64 +270,55 @@ def build_context_block(chunks: List[Dict[str, Any]]) -> str:
 
 def build_grounded_prompt(query: str, context_block: str) -> str:
     """
-    Xây dựng grounded prompt theo 4 quy tắc từ slide:
+    Xây dựng grounded prompt theo 4 quy tắc từ slide (Nâng cấp Sprint 3):
     1. Evidence-only: Chỉ trả lời từ retrieved context
-    2. Abstain: Thiếu context thì nói không đủ dữ liệu
+    2. Abstain (Graceful Fallback): Thiếu context thì TỪ CHỐI trả lời tuyệt đối
     3. Citation: Gắn source/section khi có thể
-    4. Short, clear, stable: Output ngắn, rõ, nhất quán
-
-    TODO Sprint 2:
-    Đây là prompt baseline. Trong Sprint 3, bạn có thể:
-    - Thêm hướng dẫn về format output (JSON, bullet points)
-    - Thêm ngôn ngữ phản hồi (tiếng Việt vs tiếng Anh)
-    - Điều chỉnh tone phù hợp với use case (CS helpdesk, IT support)
+    4. Short, clear, stable: Output ngắn, rõ, dùng bullet points
     """
-    prompt = f"""Answer only from the retrieved context below.
-If the context is insufficient to answer the question, say you do not know and do not make up information.
-Cite the source field (in brackets like [1]) when possible.
-Keep your answer short, clear, and factual.
-Respond in the same language as the question.
+    prompt = f"""You are a strict, factual Internal IT & CS Helpdesk Assistant. 
+Your ONLY task is to answer the user's question based strictly on the Context provided below.
 
-Question: {query}
+# RULES:
+1. GRACEFUL FALLBACK (ABSTAIN): 
+   - If the context DOES NOT contain the exact answer, you MUST reply EXACTLY with: "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này."
+   - DO NOT use your internal knowledge. DO NOT guess. DO NOT hallucinate.
+2. EVIDENCE-ONLY & CITATION: 
+   - Every claim you make MUST be backed by the context.
+   - You MUST cite the source using the bracketed number (e.g., [1], [2]) at the end of the relevant sentence.
+3. FORMATTING & TONE: 
+   - Be professional, empathetic, and clear.
+   - Use bullet points to breakdown complex policies, multiple steps, or conditions.
+   - Respond fully in Vietnamese.
 
-Context:
+# CONTEXT:
 {context_block}
 
-Answer:"""
+# USER QUESTION:
+{query}
+
+# ANSWER:"""
     return prompt
 
 
 def call_llm(prompt: str) -> str:
     """
     Gọi LLM để sinh câu trả lời.
-
-    TODO Sprint 2:
-    Chọn một trong hai:
-
-    Option A — OpenAI (cần OPENAI_API_KEY):
-        from openai import OpenAI
+    """
+    try:
+        # Khởi tạo client (tự động lấy OPENAI_API_KEY từ file .env)
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # Gọi API với parameters khống chế hallucination
         response = client.chat.completions.create(
-            model=LLM_MODEL,
+            model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
             messages=[{"role": "user", "content": prompt}],
-            temperature=0,     # temperature=0 để output ổn định, dễ đánh giá
-            max_tokens=512,
+            temperature=0,      # Temperature = 0 để khóa cứng tính sáng tạo, ép LLM nói sự thật
+            max_tokens=512,     # Headroom (như đã thiết kế ở Token Budget)
         )
         return response.choices[0].message.content
-
-    Option B — Google Gemini (cần GOOGLE_API_KEY):
-        import google.generativeai as genai
-        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-        return response.text
-
-    Lưu ý: Dùng temperature=0 hoặc thấp để output ổn định cho evaluation.
-    """
-    raise NotImplementedError(
-        "TODO Sprint 2: Implement call_llm().\n"
-        "Chọn Option A (OpenAI) hoặc Option B (Gemini) trong TODO comment."
-    )
+    except Exception as e:
+        return f"LỖI HỆ THỐNG KHI GỌI LLM: {str(e)}"
 
 
 def rag_answer(
