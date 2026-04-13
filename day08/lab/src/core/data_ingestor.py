@@ -170,7 +170,7 @@ def extract_heading(text: str) -> str:
 
     return "UNKNOWN"
 
-def save_processed_doc(doc, output_dir="data/processed"):
+def save_processed_doc(doc, output_dir="day08/lab/data/processed"):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
