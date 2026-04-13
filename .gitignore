@@ -13,3 +13,6 @@ day08/lab/docs/architecture.md
 .agent/
 .agents/
 venv
+
+__pycache__/
+.venv
