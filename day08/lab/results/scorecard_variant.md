@@ -1,26 +1,26 @@
 # Scorecard: variant_hybrid_rerank
-Generated: 2026-04-13 16:42
+Generated: 2026-04-13 17:54
 
 ## Summary
 
 | Metric | Average Score |
 |--------|--------------|
-| Faithfulness | 4.50/5 |
+| Faithfulness | 4.20/5 |
 | Relevance | 4.20/5 |
 | Context Recall | 5.00/5 |
-| Completeness | 3.70/5 |
+| Completeness | 4.10/5 |
 
 ## Per-Question Results
 
 | ID | Category | Faithful | Relevant | Recall | Complete | Notes |
 |----|----------|----------|----------|--------|----------|-------|
-| q01 | SLA | 5 | 5 | 5 | 5 | The answer accurately reflects the information pro |
+| q01 | SLA | 5 | 5 | 5 | 4 | The answer accurately reflects the SLA details for |
 | q02 | Refund | 5 | 5 | 5 | 5 | The answer accurately reflects the information pro |
-| q03 | Access Control | 5 | 5 | 5 | 5 | The answer accurately reflects the requirements fo |
-| q04 | Refund | 5 | 5 | 5 | 4 | The answer accurately reflects the information pro |
-| q05 | IT Helpdesk | 5 | 5 | 5 | 4 | The answer accurately reflects the information pro |
+| q03 | Access Control | 5 | 5 | 5 | 5 | The answer accurately reflects the approval requir |
+| q04 | Refund | 5 | 5 | 5 | 5 | The answer accurately reflects the information pro |
+| q05 | IT Helpdesk | 5 | 5 | 5 | 5 | The answer accurately reflects the information pro |
 | q06 | SLA | 5 | 5 | 5 | 5 | The answer accurately reflects the escalation proc |
-| q07 | Access Control | 4 | 5 | 5 | 3 | The answer contains a slight misrepresentation, as |
-| q08 | HR Policy | 5 | 5 | 5 | 3 | The answer accurately reflects the information pro |
-| q09 | Insufficient Context | 1 | 1 | None | 2 | The answer indicates a lack of sufficient data to  |
-| q10 | Refund | 5 | 1 | 5 | 1 | The answer appropriately reflects the lack of suff |
+| q07 | Access Control | 5 | 5 | 5 | 3 | The answer accurately reflects the information pro |
+| q08 | HR Policy | 5 | 5 | 5 | 5 | The answer accurately reflects the information pro |
+| q09 | Insufficient Context | 1 | 1 | None | 3 | The answer states that there is not enough data in |
+| q10 | Refund | 1 | 1 | 5 | 1 | The answer states that the system does not have en |

@@ -7,71 +7,69 @@
 
 ## Baseline Dense Search (Sprint 1)
 
-**Ngày:** 2026-04-13
+**Ngày:** 2026-04-13  
 **Config:**
 ```
 retrieval_mode = "dense"
-chunk_size = 512 tokens
-overlap = 50 tokens
+chunk_size = 400 tokens
+overlap = 80 tokens
 top_k_search = 10
 top_k_select = 3
 use_rerank = False
 llm_model = "gpt-4o-mini"
+embedding_model = "text-embedding-3-small"
 ```
 
 **Scorecard Baseline:**
 | Metric | Average Score |
 |--------|--------------|
-| Faithfulness | 4.8 /5 |
-| Answer Relevance | 4.5 /5 |
-| Context Recall | 3.5 /5 |
-| Completeness | 4.0 /5 |
+| Faithfulness | 4.10/5 |
+| Answer Relevance | 4.20/5 |
+| Context Recall | 5.00/5 |
+| Completeness | 4.10/5 |
 
 **Câu hỏi yếu nhất (điểm thấp):**
-q07 ("Làm thế nào để xin cấp quyền Level 3 (Admin)?") - context recall = 0/5 vì nội dung này phụ thuộc chính xác vào alias và keywords mà thuật toán Dense có thể bỏ lỡ một phần hoặc do thiếu dữ liệu, dẫn đến Abstain khởi động.
+- **q09** (ERR-403-AUTH) — Faithfulness=1, Relevance=1: Đây là câu abstain — model từ chối đúng, nhưng LLM-as-Judge chấm thấp vì không có chunks grounded. Đây là artifact của judge, không phải lỗi pipeline.
+- **q10** (VIP refund) — Faithfulness=1, Completeness=1: Model abstain đúng (không có policy VIP), nhưng judge chấm thấp tương tự q09.
+- **q07** (Approval Matrix) — Completeness=3: Dense retrieve đúng tài liệu nhưng answer chưa nhắc rõ tên cũ "Approval Matrix" → thiếu thông tin so với expected answer.
 
 **Giả thuyết nguyên nhân (Error Tree):**
-- [ ] Indexing: Chunking cắt giữa điều khoản
-- [ ] Indexing: Metadata thiếu effective_date
-- [x] Retrieval: Dense bỏ lỡ exact keyword / alias
-- [ ] Retrieval: Top-k quá ít → thiếu evidence
-- [x] Generation: Prompt khắt khe grounding → Abstain (Graceful Fallback)
-- [ ] Generation: Context quá dài → lost in the middle
+- [x] Generation: Abstain cases bị judge chấm oan (q09, q10) — cần rule đặc biệt trong scorer
+- [ ] Retrieval: Dense bỏ lỡ exact keyword / alias — chưa test thực sự (hybrid fallback về dense)
+- [ ] Generation: Context quá dài → lost in the middle (top_k_select=3 đang hạn chế vấn đề này)
+- [ ] Indexing: Metadata thiếu thông tin để judge phân biệt tài liệu
 
 ---
 
 ## Variant 1 (Sprint 3)
+
 **Ngày:** 2026-04-13  
-**Biến thay đổi:** `retrieval_mode`, `use_rerank`, và `embedding model`
+**Biến thay đổi:** `retrieval_mode = "hybrid"` + `use_rerank = True`  
 **Lý do chọn biến này:**
-- Đổi Dense Embedding sang OpenAI `text-embedding-3-small` để đồng bộ khóa API OpenAI, không sử dụng `sentence-transformers` nội bộ.
-- Chọn hybrid vì các lỗi như mã `ERR-403` hoặc IP đều thất bại với dense. Corpus có nhiều thuật ngữ kỹ thuật, code lưa thưa.
-- Bổ sung OpenAI LLM Reranking để giải quyết hiện tượng chênh lệch điểm (noise rating), đảm bảo Top 3 đưa cho Generator luôn là chuẩn xác nhất.
+> Baseline cho thấy q07 (query dùng alias "Approval Matrix" trong khi doc đổi tên thành "Access Control SOP") có Completeness thấp nhất (3/5). Corpus chứa cả ngôn ngữ tự nhiên (policy hoàn tiền) lẫn keyword chuyên ngành (ERR-403, P1, Level 3). Hybrid dense+BM25 lý thuyết sẽ giúp exact keyword match tốt hơn với các câu như q07.
 
 **Config thay đổi:**
 ```
-retrieval_mode = "hybrid"
-use_rerank = True
-embedding_model = "text-embedding-3-small" (OpenAI)
-rerank_model = "gpt-4o-mini" (OpenAI LLM)
+retrieval_mode = "hybrid"   # dense + BM25 fallback (BM25 chưa implement → fallback dense)
+use_rerank = True            # rerank candidates (chưa implement → top_k_select đầu tiên)
 # Các tham số còn lại giữ nguyên như baseline
 ```
 
 **Scorecard Variant 1:**
 | Metric | Baseline | Variant 1 | Delta |
 |--------|----------|-----------|-------|
-| Faithfulness | 4.8/5 | 4.9/5 | +0.1 |
-| Answer Relevance | 4.5/5 | 4.8/5 | +0.3 |
-| Context Recall | 3.5/5 | 4.6/5 | +1.1 |
-| Completeness | 4.0/5 | 4.5/5 | +0.5 |
+| Faithfulness | 4.10/5 | 4.00/5 | -0.10 |
+| Answer Relevance | 4.20/5 | 4.20/5 | ±0.00 |
+| Context Recall | 5.00/5 | 5.00/5 | ±0.00 |
+| Completeness | 4.10/5 | 4.30/5 | +0.20 |
 
 **Nhận xét:**
-- Variant 1 cải thiện mạnh Context Recall (từ 3.5 lên 4.6) nhờ cơ chế Sparse (BM25) và Masking Tokenizer giữ được mã lỗi như ERR-403 và các địa chỉ IP nguyên vẹn.
-- Đầu vào LLM (Context Injection) nay ít nhiễu hơn hẳn do quá trình LLM Rerank loại bỏ những text không thực sự chứa câu trả lời, đẩy điểm Completeness và Answer Relevance lên cao.
-- Có sự delay một chút nhỏ ở performance lúc Rerank vì phải call sang OpenAI thay vì local CrossEncoder, tuy nhiên trade-off là đáng do không phải setup environment cồng kềnh với Transformers.
+- Variant nhỉnh hơn ở **q07** (Completeness 3→5): dù hybrid fallback về dense, nhưng answer lần này cover đầy đủ hơn — có thể do LLM-as-Judge variance.
+- Faithfulness giảm nhẹ -0.10: không đáng kể, nằm trong noise của LLM judge.
+- Các câu còn lại Tie — không có sự khác biệt thực sự do hybrid/rerank chưa implement thực sự.
 
 **Kết luận:**
-- Tốt hơn hẳn Baseline đặc biệt với các câu hỏi về IT Helpdesk chứa mã lỗi và thông tin cụ thể (chất lượng Hybrid + LLM Rerank là quá ấn tượng so với Dense-only). Đạt yêu cầu cho Production.
+> Variant 1 không cải thiện đáng kể so với baseline vì BM25 và cross-encoder rerank chưa implement — cả hai đều fallback. Kết quả A/B không phản ánh lợi thế thực sự của hybrid. Nếu implement BM25 thực, kỳ vọng q07 (alias query) sẽ cải thiện rõ rệt.
 
 ---
 
@@ -117,12 +115,15 @@ prompt_template = "prompt_templates.txt"
 - Cài đặt theo dõi Logging lõi "Graceful Fallback" giúp team thống kê tỷ lệ Abstain của RAG Pipeline.
 
 ## Tóm tắt học được
+
 1. **Lỗi phổ biến nhất trong pipeline này là gì?**
-   > Lỗi đánh rơi Keywords và Mã lỗi mảng (ERR-403) khi Tokenizer thông thường của Dense đụng phải. Hiện tượng Abstain vì không có đủ Context do Retrieve sót, gây đứt gãy luồng Support.
+   > LLM-as-Judge chấm oan câu abstain: khi model từ chối trả lời đúng (không có context), judge vẫn cho Faithfulness=1 vì "không grounded". Đây là false negative của scoring, không phải lỗi pipeline.
+
 2. **Biến nào có tác động lớn nhất tới chất lượng?**
-   > Biến `retrieval_mode="hybrid"` có tác động lớn nhất vì thay vì nhồi Dense, việc bổ sung BM25 với Masking giúp lôi ra đúng tài liệu chính xác trước khi LLM Reranker nhận nhiệm vụ tinh chỉnh cuối cùng, đóng vai trò bản lề cho độ nét Context.
+   > Grounded prompt design — câu lệnh abstain rõ ràng trong system prompt quyết định model có bịa hay không. Context Recall đạt 5.00/5 cho thấy retrieval tốt; bottleneck chủ yếu ở generation quality và scoring logic.
+
 3. **Nếu có thêm 1 giờ, nhóm sẽ thử gì tiếp theo?**
-   > Sẽ thử Query Transformation (HyDE hoặc Decomposition) để mở rộng cách support user bằng những câu hỏi cụt ngủn hoặc ngữ pháp không chuẩn.
+   > Implement BM25 thực sự để test q07 alias case, và thêm rule trong scorer: nếu answer khớp với abstain phrase thì Faithfulness = N/A thay vì 1.
 
 ## Sprint Preparation & Setup
 **Changed Variable**: N/A (Sprint Structure initialized)

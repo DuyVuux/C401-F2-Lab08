@@ -58,37 +58,45 @@ def retrieve_dense(query: str, top_k: int = TOP_K_SEARCH) -> List[Dict[str, Any]
     """
     logger.info(f"[DENSE_START] Payload: query=\"{query}\", top_k={top_k}")
     try:
-        from src.indexing.index import get_embedding
-        from vector_store_manager import get_chroma_collection
-        
-        collection = get_chroma_collection()
-        
+        import sys
+        from pathlib import Path as _Path
+        _project_root = str(_Path(__file__).parents[4])
+        if _project_root not in sys.path:
+            sys.path.insert(0, _project_root)
+        from day08.lab.src.indexing.index import get_embedding, CHROMA_DB_DIR
+        from day08.lab.vector_store_manager import get_chroma_collection
+
         t0 = time.time()
         query_embedding = get_embedding(query)
         latency_ms = int((time.time() - t0) * 1000)
         logger.debug(f"[DENSE_EMBEDDING] Embedding generation time: {latency_ms}ms")
-        
-        t1 = time.time()
+
+        collection = get_chroma_collection(CHROMA_DB_DIR)
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
-            include=["documents", "metadatas", "distances"]
+            include=["documents", "metadatas", "distances"],
         )
-        db_latency_ms = int((time.time() - t1) * 1000)
-        
-        docs = []
-        if results and "documents" in results and results["documents"]:
-            for doc, meta, dist in zip(results["documents"][0], results["metadatas"][0], results["distances"][0]):
-                docs.append({
-                    "text": doc,
-                    "metadata": meta,
-                    "score": 1.0 - float(dist)
-                })
-                
-        logger.info(f"[DENSE_SUCCESS] Found {len(docs)} docs | DB latency: {db_latency_ms}ms")
-        return docs
+        # distances trong ChromaDB cosine = 1 - similarity → score = 1 - distance
+
+        chunks = []
+        for doc, meta, dist in zip(
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+        ):
+            chunks.append({
+                "text": doc,
+                "metadata": meta,
+                "score": round(1 - dist, 4),
+            })
+
+        latency_ms = int((time.time() - t0) * 1000)
+        logger.info(f"[DENSE_SUCCESS] Retrieved {len(chunks)} chunks in {latency_ms}ms")
+        return chunks
+
     except Exception as e:
-        logger.error(f"[DENSE_FAILED] DB connection broken hoặc Timeout | Details: {str(e)}")
+        logger.error(f"[DENSE_ERROR] {e}")
         return []
 
 
