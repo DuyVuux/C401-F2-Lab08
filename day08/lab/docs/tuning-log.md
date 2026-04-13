@@ -104,3 +104,12 @@ retrieval_mode = "hybrid"   # hoặc biến khác
 
 3. **Nếu có thêm 1 giờ, nhóm sẽ thử gì tiếp theo?**
    > _____________
+
+## Sprint Preparation & Setup
+**Changed Variable**: N/A (Sprint Structure initialized)
+**New Value**: Generated Sprint Prompt Suite 001 to 007
+**Reason**: Setting up the architectural standards for execution prompts containing explicit Unit Tests and Logic Constraints.
+<!-- **Changed Variable**: Architectural Prompts Structure (Sprint 1, 2, 4)
+**New Value**: Updated `007_evaluation_metrics.md` (Scorecard) and created `008_indexing_metadata.md`, `009_grounded_generation_prompt.md`.
+**Reason**: Realigning implementation plans with Day 08 Lecture directives on Grounded Generation, Metadata Schema, and Scorecard Evaluation limits.
+ -->

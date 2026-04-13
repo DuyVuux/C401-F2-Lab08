@@ -134,3 +134,7 @@ graph LR
     I --> J[LLM]
     J --> K[Answer + Citation]
 ```
+
+### Retrieval Prompt Protocol
+- Hệ thống Prompts phát triển (Sprint 1-4) của Relevance Engineer đã được thiết lập tự động hóa tại `docs/prompt/*`.
+<!-- - Bổ sung quy chuẩn Đánh giá (`007`), Cấu trúc Index (`008`), và Chống ảo giác Grounded (`009`) theo tiêu chuẩn phân quyền RAG Mới. -->
