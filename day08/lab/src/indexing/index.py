@@ -13,6 +13,7 @@ from src.core.data_ingestor import (
     clean_text,
     save_processed_doc,
 )
+from vector_store_manager import get_chroma_collection
 
 load_dotenv()
 
@@ -30,15 +31,6 @@ CHROMA_DB_DIR = BASE_DIR / "chroma_db"
 CHUNK_SIZE = 700
 CHUNK_OVERLAP = 20
 MIN_CHUNK_CHARS = 80
-
-
-def get_chroma_collection(db_dir: Path = CHROMA_DB_DIR):
-    import chromadb
-    client = chromadb.PersistentClient(path=str(db_dir))
-    return client.get_or_create_collection(
-        name="rag_lab",
-        metadata={"hnsw:space": "cosine"},
-    )
 
 
 def preprocess_document(raw_text: str, filepath: str) -> Dict[str, Any]:

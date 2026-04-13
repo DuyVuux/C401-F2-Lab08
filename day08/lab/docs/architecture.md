@@ -73,25 +73,15 @@ Hệ thống RAG hỗ trợ nhân sự IT và CS tra cứu quy trình, xử lý 
 
 ---
 
-## 4. Generation (Sprint 2)
+## 4. Generation (Sprint 2 + Sprint 4)
 
 ### Grounded Prompt Template
-```
-Answer only from the retrieved context below.
-If the context is insufficient, say you do not know.
-Cite the source field when possible.
-Keep your answer short, clear, and factual.
-
-Question: {query}
-
-Context:
-[1] {source} | {section} | score={score}
-{chunk_text}
-
-[2] ...
-
-Answer:
-```
+Đã được externalize ra file `prompt_templates.txt` để thuận tiện điều chỉnh qua các Sprint.
+Quy tắc:
+1. Evidence-only: Ràng buộc bám sát document.
+2. Abstain (Graceful Fallback Tracking enabled): Dễ dàng trigger Fallback Logging qua system.
+3. Citation tracking: Yêu cầu trích dẫn cụ thể ID và số section.
+4. Token Budget Guardrail: Có đo độ dài Token của Context/Prompt truyền vào nhằm ngăn ngừa lỗi API.
 
 ### LLM Configuration
 | Tham số | Giá trị |
@@ -110,9 +100,9 @@ Answer:
 |-------------|-------------|---------------|
 | Index lỗi | Retrieve về docs cũ / sai version | `inspect_metadata_coverage()` trong index.py |
 | Chunking tệ | Chunk cắt giữa điều khoản | `list_chunks()` và đọc text preview |
-| Retrieval lỗi | Không tìm được expected source | `score_context_recall()` trong eval.py |
-| Generation lỗi | Answer không grounded / bịa | `score_faithfulness()` trong eval.py |
-| Token overload | Context quá dài → lost in the middle | Kiểm tra độ dài context_block |
+| Retrieval lỗi | Không tìm được expected source | System Log Catch: Empty retrieval, `score_context_recall()` trong eval.py |
+| Generation lỗi | Answer không grounded / bịa | Bị đánh cờ qua Error Tree Fallback catch, `score_faithfulness()` trong eval.py |
+| Token overload | Context quá dài → lost in the middle | Giám sát qua `[DIAGNOSTICS] Prompt Token Budget` log |
 
 ---
 

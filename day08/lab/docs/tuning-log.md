@@ -97,6 +97,24 @@ recency_penalty = 0.95 ^ years
 - System Monitor đã có khả năng chặn bắt Latency Spike, giới hạn độ trễ và phạt (Penalty) các tài liệu có `effective_date` quá xa thực tế (Time decay). Điều này giúp Context đưa vào giảm thiểu văn bản cũ sai lịch sử.
 - Lỗi Sparse Empty Retrieval được Detect sớm và Log thành công, giảm công Debug cho Engine.
 
+## Variant 3 (Sprint 4 - Generation Error Tree & Token Budget)
+
+**Biến thay đổi:** `token_budget_tracking`, `prompt_templates`
+**Lý do chọn biến này:**
+- Kiểm soát LLM Context Window, ngăn cản các Prompt quá tải sinh lỗi Context Length hoặc "Lost in the Middle".
+- Đóng gói chuẩn hóa Prompt ra template ngoài thay vì hardcode bên trong hàm.
+- Tích hợp theo dõi nhánh cuối của Error Tree: đo nghiệm tần suất model chủ động từ chối (Graceful Fallback).
+
+**Config:**
+```python
+token_budget_tracking = True
+prompt_template = "prompt_templates.txt"
+```
+
+**Nhận xét (Sprint 4 - Role 4):**
+- Đã tách prompt cứng ra file `prompt_templates.txt` để vận hành (Ops) tốt hơn.
+- Cài đặt hệ thống đo lường `Token Budget Estimated` bằng logic Character Count // 4 và LLM API Usage Report.
+- Cài đặt theo dõi Logging lõi "Graceful Fallback" giúp team thống kê tỷ lệ Abstain của RAG Pipeline.
 
 ## Tóm tắt học được
 1. **Lỗi phổ biến nhất trong pipeline này là gì?**

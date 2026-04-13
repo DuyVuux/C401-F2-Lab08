@@ -58,11 +58,10 @@ def retrieve_dense(query: str, top_k: int = TOP_K_SEARCH) -> List[Dict[str, Any]
     """
     logger.info(f"[DENSE_START] Payload: query=\"{query}\", top_k={top_k}")
     try:
-        import chromadb
-        from src.indexing.index import get_embedding, CHROMA_DB_DIR
+        from src.indexing.index import get_embedding
+        from vector_store_manager import get_chroma_collection
         
-        client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
-        collection = client.get_collection("rag_lab")
+        collection = get_chroma_collection()
         
         t0 = time.time()
         query_embedding = get_embedding(query)
@@ -106,12 +105,10 @@ class SparseEngine:
 
     def _build_index(self):
         try:
-            import chromadb
-            from src.indexing.index import CHROMA_DB_DIR
+            from vector_store_manager import get_chroma_collection
             from rank_bm25 import BM25Okapi
 
-            client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
-            collection = client.get_collection("rag_lab")
+            collection = get_chroma_collection()
             results = collection.get(include=["documents", "metadatas"])
 
             if not results or not results["documents"]:
@@ -586,35 +583,25 @@ def build_context_block(chunks: List[Dict[str, Any]]) -> str:
     return "\n\n".join(context_parts)
 
 
-def build_grounded_prompt(query: str, context_block: str) -> str:
+def build_grounded_prompt(query: str, context_block: str) -> List[Dict[str, str]]:
     """
-    Xây dựng grounded prompt theo 4 quy tắc từ slide (Nâng cấp Sprint 3):
-    1. Evidence-only: Chỉ trả lời từ retrieved context
-    2. Abstain (Graceful Fallback): Thiếu context thì TỪ CHỐI trả lời tuyệt đối
-    3. Citation: Gắn source/section khi có thể
-    4. Short, clear, stable: Output ngắn, rõ, dùng bullet points
+    Xây dựng grounded prompt. Đọc system_prompt từ thư mục cha.
+    Sprint 4: Token Budget profiling.
     """
-    system_prompt = """You are an expert Internal CS & IT Helpdesk Assistant.
-Your primary goal is to help the user by answering their questions based ONLY on the provided CONTEXT.
+    try:
+        from pathlib import Path
+        prompt_file = Path(__file__).resolve().parents[2] / "prompt_templates.txt"
+        system_prompt = prompt_file.read_text(encoding="utf-8").strip()
+    except Exception as e:
+        logger.warning(f"[ERROR_TREE] Cannot read prompt template: {e}")
+        system_prompt = "You are a helpful assistant. Use context to answer. If no context answers the question, say: Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này."
 
-# INSTRUCTIONS (Follow strictly):
-1. ANALYZE & DEDUCE: Read the context and the user's question. You are allowed to make basic logical deductions to be helpful. 
-   - Example: Understand that "hôm qua" to "hôm nay" is 1 day (which is < 7 days).
-   - Example: Recognize that a "phần mềm" (software) is a "sản phẩm kỹ thuật số" or "license key".
-2. ANSWER CONFIDENTLY: If the context contains relevant information to address the core of the question, provide a clear, professional answer. 
-   - Use bullet points for readability.
-   - You MUST cite the source by adding the bracketed number (e.g., [1], [2]) at the end of the sentence containing the claim.
-3. GRACEFUL FALLBACK: IF AND ONLY IF the context is entirely irrelevant or lacks the critical details needed to answer, you must refuse.
-   - In this case, reply EXACTLY with: "Xin lỗi, hệ thống hiện không có đủ dữ liệu trong tài liệu để trả lời câu hỏi này."
-   - Do not guess or use external knowledge.
+    user_prompt = f"# CONTEXT:\n{context_block}\n\n# USER QUESTION:\n{query}"
 
-Respond fully in Vietnamese."""
-
-    user_prompt = f"""# CONTEXT:
-{context_block}
-
-# USER QUESTION:
-{query}"""
+    budget_used = (len(system_prompt) + len(user_prompt)) // 4
+    logger.info(f"[DIAGNOSTICS] Prompt Token Budget Estimated: {budget_used} tokens.")
+    if budget_used > 6000:
+        logger.warning(f"[ERROR_TREE] [CONTEXT_TOO_LONG] Prompt size is very large ({budget_used} tokens).")
 
     return [
         {"role": "system", "content": system_prompt},
@@ -624,21 +611,30 @@ Respond fully in Vietnamese."""
 
 def call_llm(messages: List[Dict[str, str]]) -> str:
     """
-    Gọi LLM để sinh câu trả lời.
+    Gọi LLM để sinh câu trả lời (Có đo lường đính kèm phục vụ Diagnostics Sprint 4).
     """
+    t0 = time.time()
     try:
-        # Khởi tạo client (tự động lấy OPENAI_API_KEY từ file .env)
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
-        # Gọi API với parameters khống chế hallucination
         response = client.chat.completions.create(
             model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
             messages=messages,
-            temperature=0,      # Temperature = 0 để khóa cứng tính sáng tạo, ép LLM nói sự thật
-            max_tokens=512,     # Headroom (như đã thiết kế ở Token Budget)
+            temperature=0,
+            max_tokens=512,
         )
-        return response.choices[0].message.content
+        answer = response.choices[0].message.content
+        latency_ms = int((time.time() - t0) * 1000)
+        
+        usage = response.usage
+        logger.info(f"[DIAGNOSTICS] LLM Generation Latency: {latency_ms}ms | Tokens: prompt={usage.prompt_tokens}, completion={usage.completion_tokens}, total={usage.total_tokens}")
+        
+        if "hệ thống hiện không có đủ dữ liệu" in answer.lower():
+            logger.warning("[ERROR_TREE] [HALLUCINATION_FALLBACK] LLM triggered Graceful Fallback.")
+            
+        return answer
     except Exception as e:
+        logger.error(f"[ERROR_TREE] [LLM_FAILED] LỖI HỆ THỐNG KHI GỌI LLM: {str(e)}")
         return f"LỖI HỆ THỐNG KHI GỌI LLM: {str(e)}"
 
 
