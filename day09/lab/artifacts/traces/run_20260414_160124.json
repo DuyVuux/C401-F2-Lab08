@@ -1,0 +1,134 @@
+{
+  "task": "Tài khoản bị khóa sau bao nhiêu lần đăng nhập sai?",
+  "route_reason": "default route: không match keyword cụ thể",
+  "risk_high": false,
+  "needs_tool": false,
+  "hitl_triggered": false,
+  "retrieved_chunks": [
+    {
+      "text": "Q: Tôi quên mật khẩu, phải làm gì?\nA: Truy cập https://sso.company.internal/reset hoặc liên hệ Helpdesk qua ext. 9000. Mật khẩu mới sẽ được gửi qua email công ty trong vòng 5 phút.\n\nQ: Tài khoản bị khóa sau bao nhiêu lần đăng nhập sai?\nA: Tài khoản bị khóa sau 5 lần đăng nhập sai liên tiếp. Để mở khóa, liên hệ IT Helpdesk hoặc tự reset qua portal SSO.\n\nQ: Mật khẩu cần thay đổi định kỳ không?\nA: Có. Mật khẩu phải được thay đổi mỗi 90 ngày. Hệ thống sẽ nhắc nhở 7 ngày trước khi hết hạn.",
+      "metadata": {
+        "effective_date": "2026-01-20",
+        "access": "internal",
+        "department": "IT",
+        "heading": "IT HELPDESK FAQ — CÂU HỎI THƯỜNG GẶP",
+        "section": "Section 1: Tài khoản và mật khẩu",
+        "source": "support/helpdesk-faq.md"
+      },
+      "score": 0.6279
+    },
+    {
+      "text": "IT Security thực hiện access review mỗi 6 tháng.\nMọi bất thường phải được báo cáo lên CISO trong vòng 24 giờ.",
+      "metadata": {
+        "source": "it/access-control-sop.md",
+        "department": "IT Security",
+        "section": "Section 6: Audit và review định kỳ",
+        "access": "internal",
+        "heading": "QUY TRÌNH KIỂM SOÁT TRUY CẬP HỆ THỐNG (ACCESS CONTROL SOP)",
+        "effective_date": "2026-01-01",
+        "alias": "Approval Matrix for System Access"
+      },
+      "score": 0.4564
+    },
+    {
+      "text": "Q: Hộp thư đến đầy, phải làm gì?\nA: Xóa email cũ hoặc yêu cầu tăng dung lượng qua ticket IT-ACCESS. Dung lượng tiêu chuẩn là 50GB.\n\nQ: Tôi không nhận được email từ bên ngoài?\nA: Kiểm tra thư mục Spam trước. Nếu vẫn không có, tạo ticket P2 kèm địa chỉ email gửi và thời gian gửi.",
+      "metadata": {
+        "effective_date": "2026-01-20",
+        "department": "IT",
+        "source": "support/helpdesk-faq.md",
+        "access": "internal",
+        "heading": "IT HELPDESK FAQ — CÂU HỎI THƯỜNG GẶP",
+        "section": "Section 5: Email và lịch"
+      },
+      "score": 0.4027
+    }
+  ],
+  "retrieved_sources": [
+    "support/helpdesk-faq.md",
+    "it/access-control-sop.md"
+  ],
+  "policy_result": {},
+  "mcp_tools_used": [],
+  "final_answer": "Tài khoản bị khóa sau 5 lần đăng nhập sai liên tiếp. Để mở khóa, bạn có thể liên hệ IT Helpdesk hoặc tự reset qua portal SSO [1].",
+  "sources": [],
+  "confidence": 0.5,
+  "history": [
+    {
+      "step": "supervisor",
+      "route": "retrieval_worker",
+      "reason": "default route: không match keyword cụ thể"
+    },
+    {
+      "step": "retrieval_worker",
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "Tài khoản bị khóa sau bao nhiêu lần đăng nhập sai?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:24.507539",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "support/helpdesk-faq.md",
+          "it/access-control-sop.md"
+        ]
+      }
+    },
+    {
+      "step": "synthesis_worker",
+      "event": "completed",
+      "confidence": 0.5,
+      "sources": []
+    },
+    {
+      "step": "graph",
+      "event": "completed",
+      "route": "retrieval_worker",
+      "latency_ms": 1849
+    }
+  ],
+  "workers_called": [
+    "retrieval_worker",
+    "synthesis_worker"
+  ],
+  "supervisor_route": "retrieval_worker",
+  "latency_ms": 1849,
+  "run_id": "run_20260414_160124",
+  "worker_io_logs": [
+    {
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "Tài khoản bị khóa sau bao nhiêu lần đăng nhập sai?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:24.507539",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "support/helpdesk-faq.md",
+          "it/access-control-sop.md"
+        ]
+      }
+    },
+    {
+      "worker": "synthesis_worker",
+      "input": {
+        "task": "Tài khoản bị khóa sau bao nhiêu lần đăng nhập sai?",
+        "chunks_count": 3,
+        "has_policy_result": false,
+        "mcp_tools_count": 0
+      },
+      "output": {
+        "answer_length": 129,
+        "sources": [],
+        "confidence": 0.5,
+        "abstained": false
+      },
+      "error": null,
+      "timestamp": "2026-04-14T16:01:24.972379"
+    }
+  ],
+  "question_id": "q04"
+}

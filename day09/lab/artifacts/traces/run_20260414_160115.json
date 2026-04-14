@@ -1,0 +1,133 @@
+{
+  "task": "SLA xử lý ticket P1 là bao lâu?",
+  "route_reason": "task chứa SLA keyword: ['p1', 'sla', 'ticket']",
+  "risk_high": false,
+  "needs_tool": false,
+  "hitl_triggered": false,
+  "retrieved_chunks": [
+    {
+      "text": "Ticket P1:\n- Phản hồi ban đầu (first response): 15 phút kể từ khi ticket được tạo.\n- Xử lý và khắc phục (resolution): 4 giờ.\n- Escalation: Tự động escalate lên Senior Engineer nếu không có phản hồi trong 10 phút.\n- Thông báo stakeholder: Ngay khi nhận ticket, update mỗi 30 phút cho đến khi resolve.\n\nTicket P2:\n- Phản hồi ban đầu: 2 giờ.\n- Xử lý và khắc phục: 1 ngày làm việc.\n- Escalation: Tự động escalate sau 90 phút không có phản hồi.\n\nTicket P3:\n- Phản hồi ban đầu: 1 ngày làm việc.\n- Xử lý và khắc phục: 5 ngày làm việc.\n\nTicket P4:\n- Phản hồi ban đầu: 3 ngày làm việc.\n- Xử lý và khắc phục: Theo sprint cycle (thông thường 2-4 tuần).",
+      "metadata": {
+        "access": "internal",
+        "department": "IT",
+        "source": "support/sla-p1-2026.pdf",
+        "effective_date": "2026-01-15",
+        "heading": "SLA TICKET - QUY ĐỊNH XỬ LÝ SỰ CỐ",
+        "section": "Phần 2: SLA theo mức độ ưu tiên"
+      },
+      "score": 0.618
+    },
+    {
+      "text": "Bước 1: Tiếp nhận\nOn-call engineer nhận alert hoặc ticket, xác nhận severity trong 5 phút.\n\nBước 2: Thông báo\nGửi thông báo tới Slack #incident-p1 và email incident@company.internal ngay lập tức.\n\nBước 3: Triage và phân công\nLead Engineer phân công engineer xử lý trong 10 phút.\n\nBước 4: Xử lý\nEngineer cập nhật tiến độ lên ticket mỗi 30 phút. Nếu cần hỗ trợ thêm, escalate ngay.\n\nBước 5: Resolution\nSau khi khắc phục, viết incident report trong vòng 24 giờ.",
+      "metadata": {
+        "effective_date": "2026-01-15",
+        "section": "Phần 3: Quy trình xử lý sự cố P1",
+        "heading": "SLA TICKET - QUY ĐỊNH XỬ LÝ SỰ CỐ",
+        "source": "support/sla-p1-2026.pdf",
+        "department": "IT",
+        "access": "internal"
+      },
+      "score": 0.4849
+    },
+    {
+      "text": "Bước 1: Khách hàng gửi yêu cầu qua hệ thống ticket nội bộ với category \"Refund Request\".\nBước 2: CS Agent xem xét trong vòng 1 ngày làm việc và xác nhận điều kiện đủ điều kiện.\nBước 3: Nếu đủ điều kiện, chuyển yêu cầu sang Finance Team để xử lý hoàn tiền.\nBước 4: Finance Team xử lý trong 3-5 ngày làm việc và thông báo kết quả cho khách hàng.",
+      "metadata": {
+        "department": "CS",
+        "access": "internal",
+        "heading": "CHÍNH SÁCH HOÀN TIỀN - PHIÊN BẢN 4",
+        "source": "policy/refund-v4.pdf",
+        "section": "Điều 4: Quy trình xử lý yêu cầu hoàn tiền",
+        "effective_date": "2026-02-01"
+      },
+      "score": 0.4683
+    }
+  ],
+  "retrieved_sources": [
+    "policy/refund-v4.pdf",
+    "support/sla-p1-2026.pdf"
+  ],
+  "policy_result": {},
+  "mcp_tools_used": [],
+  "final_answer": "SLA xử lý ticket P1 là:\n- Phản hồi ban đầu: 15 phút kể từ khi ticket được tạo.\n- Xử lý và khắc phục: 4 giờ. \n- Escalation: Tự động escalate lên Senior Engineer nếu không có phản hồi trong 10 phút. \n- Thông báo stakeholder: Ngay khi nhận ticket, update mỗi 30 phút cho đến khi resolve. [1]",
+  "sources": [],
+  "confidence": 0.52,
+  "history": [
+    {
+      "step": "supervisor",
+      "route": "retrieval_worker",
+      "reason": "task chứa SLA keyword: ['p1', 'sla', 'ticket']"
+    },
+    {
+      "step": "retrieval_worker",
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "SLA xử lý ticket P1 là bao lâu?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:15.877841",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "policy/refund-v4.pdf",
+          "support/sla-p1-2026.pdf"
+        ]
+      }
+    },
+    {
+      "step": "synthesis_worker",
+      "event": "completed",
+      "confidence": 0.52,
+      "sources": []
+    },
+    {
+      "step": "graph",
+      "event": "completed",
+      "route": "retrieval_worker",
+      "latency_ms": 4343
+    }
+  ],
+  "workers_called": [
+    "retrieval_worker",
+    "synthesis_worker"
+  ],
+  "supervisor_route": "retrieval_worker",
+  "latency_ms": 4343,
+  "run_id": "run_20260414_160115",
+  "worker_io_logs": [
+    {
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "SLA xử lý ticket P1 là bao lâu?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:15.877841",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "policy/refund-v4.pdf",
+          "support/sla-p1-2026.pdf"
+        ]
+      }
+    },
+    {
+      "worker": "synthesis_worker",
+      "input": {
+        "task": "SLA xử lý ticket P1 là bao lâu?",
+        "chunks_count": 3,
+        "has_policy_result": false,
+        "mcp_tools_count": 0
+      },
+      "output": {
+        "answer_length": 288,
+        "sources": [],
+        "confidence": 0.52,
+        "abstained": false
+      },
+      "error": null,
+      "timestamp": "2026-04-14T16:01:17.617047"
+    }
+  ],
+  "question_id": "q01"
+}

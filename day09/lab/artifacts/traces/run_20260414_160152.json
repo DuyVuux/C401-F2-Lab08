@@ -1,0 +1,134 @@
+{
+  "task": "Nhân viên vừa vào thử việc (trong probation period) muốn làm remote vì lý do cá nhân. Điều kiện là gì?",
+  "route_reason": "default route: không match keyword cụ thể",
+  "risk_high": false,
+  "needs_tool": false,
+  "hitl_triggered": false,
+  "retrieved_chunks": [
+    {
+      "text": "4.1 Điều kiện remote:\n- Nhân viên sau probation period có thể làm remote tối đa 2 ngày/tuần.\n- Team Lead phải phê duyệt lịch remote qua HR Portal.\n- Ngày onsite bắt buộc: Thứ 3 và Thứ 5 theo lịch team.\n\n4.2 Yêu cầu kỹ thuật khi remote:\n- Kết nối VPN bắt buộc khi làm việc với hệ thống nội bộ.\n- Camera bật trong các cuộc họp team.",
+      "metadata": {
+        "heading": "CHÍNH SÁCH NGHỈ PHÉP VÀ PHÚC LỢI NHÂN SỰ",
+        "source": "hr/leave-policy-2026.pdf",
+        "access": "internal",
+        "section": "Phần 4: Remote work policy",
+        "department": "HR",
+        "effective_date": "2026-01-01"
+      },
+      "score": 0.7449
+    },
+    {
+      "text": "Bước 1: Nhân viên gửi yêu cầu nghỉ phép qua hệ thống HR Portal (https://hr.company.internal) ít nhất 3 ngày làm việc trước ngày nghỉ.\nBước 2: Line Manager phê duyệt hoặc từ chối trong vòng 1 ngày làm việc.\nBước 3: Nhân viên nhận thông báo qua email sau khi được phê duyệt.\n\nTrường hợp khẩn cấp: Có thể gửi yêu cầu muộn hơn nhưng phải được Line Manager đồng ý qua tin nhắn trực tiếp.",
+      "metadata": {
+        "section": "Phần 2: Quy trình xin nghỉ phép",
+        "source": "hr/leave-policy-2026.pdf",
+        "effective_date": "2026-01-01",
+        "heading": "CHÍNH SÁCH NGHỈ PHÉP VÀ PHÚC LỢI NHÂN SỰ",
+        "department": "HR",
+        "access": "internal"
+      },
+      "score": 0.4969
+    },
+    {
+      "text": "Quyền phải được thu hồi trong các trường hợp:\n- Nhân viên nghỉ việc: Thu hồi ngay trong ngày cuối.\n- Hết hạn contract: Thu hồi đúng ngày hết hạn.\n- Chuyển bộ phận: Điều chỉnh trong 3 ngày làm việc.",
+      "metadata": {
+        "effective_date": "2026-01-01",
+        "access": "internal",
+        "alias": "Approval Matrix for System Access",
+        "section": "Section 5: Thu hồi quyền truy cập",
+        "heading": "QUY TRÌNH KIỂM SOÁT TRUY CẬP HỆ THỐNG (ACCESS CONTROL SOP)",
+        "source": "it/access-control-sop.md",
+        "department": "IT Security"
+      },
+      "score": 0.475
+    }
+  ],
+  "retrieved_sources": [
+    "hr/leave-policy-2026.pdf",
+    "it/access-control-sop.md"
+  ],
+  "policy_result": {},
+  "mcp_tools_used": [],
+  "final_answer": "Nhân viên trong probation period không được phép làm remote. Chỉ nhân viên sau probation period mới có thể làm remote tối đa 2 ngày/tuần, với sự phê duyệt của Team Lead qua HR Portal [1].",
+  "sources": [],
+  "confidence": 0.57,
+  "history": [
+    {
+      "step": "supervisor",
+      "route": "retrieval_worker",
+      "reason": "default route: không match keyword cụ thể"
+    },
+    {
+      "step": "retrieval_worker",
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "Nhân viên vừa vào thử việc (trong probation period) muốn làm remote vì lý do cá nhân. Điều kiện là gì?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:52.473632",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "hr/leave-policy-2026.pdf",
+          "it/access-control-sop.md"
+        ]
+      }
+    },
+    {
+      "step": "synthesis_worker",
+      "event": "completed",
+      "confidence": 0.57,
+      "sources": []
+    },
+    {
+      "step": "graph",
+      "event": "completed",
+      "route": "retrieval_worker",
+      "latency_ms": 2204
+    }
+  ],
+  "workers_called": [
+    "retrieval_worker",
+    "synthesis_worker"
+  ],
+  "supervisor_route": "retrieval_worker",
+  "latency_ms": 2204,
+  "run_id": "run_20260414_160152",
+  "worker_io_logs": [
+    {
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "Nhân viên vừa vào thử việc (trong probation period) muốn làm remote vì lý do cá nhân. Điều kiện là gì?",
+        "top_k": 3
+      },
+      "timestamp": "2026-04-14T16:01:52.473632",
+      "warning": "Day08 import failed, using fallback: No module named 'src'",
+      "output": {
+        "chunks_count": 3,
+        "sources": [
+          "hr/leave-policy-2026.pdf",
+          "it/access-control-sop.md"
+        ]
+      }
+    },
+    {
+      "worker": "synthesis_worker",
+      "input": {
+        "task": "Nhân viên vừa vào thử việc (trong probation period) muốn làm remote vì lý do cá nhân. Điều kiện là gì?",
+        "chunks_count": 3,
+        "has_policy_result": false,
+        "mcp_tools_count": 0
+      },
+      "output": {
+        "answer_length": 187,
+        "sources": [],
+        "confidence": 0.57,
+        "abstained": false
+      },
+      "error": null,
+      "timestamp": "2026-04-14T16:01:52.919666"
+    }
+  ],
+  "question_id": "q14"
+}
