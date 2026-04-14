@@ -331,48 +331,86 @@ def dispatch_tool(tool_name: str, tool_input: dict) -> dict:
 # Test & Demo
 # ─────────────────────────────────────────────
 
+
+# ─────────────────────────────────────────────
+# HTTP Server with FastAPI (Bonus Option)
+# ─────────────────────────────────────────────
+import sys
 if __name__ == "__main__":
-    print("=" * 60)
-    print("MCP Server — Tool Discovery & Test")
-    print("=" * 60)
+    import argparse
+    parser = argparse.ArgumentParser(description="MCP Server: mock + FastAPI HTTP server")
+    parser.add_argument("--http", action="store_true", help="Run FastAPI HTTP server on port 8000")
+    args = parser.parse_args()
 
-    # 1. Discover tools
-    print("\n📋 Available Tools:")
-    for tool in list_tools():
-        print(f"  • {tool['name']}: {tool['description'][:60]}...")
+    if args.http:
+        try:
+            from fastapi import FastAPI, Request
+            from fastapi.responses import JSONResponse
+            import uvicorn
+        except ImportError:
+            print("FastAPI/uvicorn chưa được cài đặt. Cài bằng: pip install fastapi uvicorn")
+            sys.exit(1)
 
-    # 2. Test search_kb
-    print("\n🔍 Test: search_kb")
-    result = dispatch_tool("search_kb", {"query": "SLA P1 resolution time", "top_k": 2})
-    if result.get("chunks"):
-        for c in result["chunks"]:
-            print(f"  [{c.get('score', '?')}] {c.get('source')}: {c.get('text', '')[:70]}...")
+        app = FastAPI(title="Mock MCP Server", description="MCP tool discovery & execution API", version="1.0")
+
+        @app.get("/tools/list")
+        async def api_list_tools():
+            return list_tools()
+
+        @app.post("/tools/call")
+        async def api_call_tool(request: Request):
+            body = await request.json()
+            tool_name = body.get("tool_name")
+            tool_input = body.get("tool_input", {})
+            result = dispatch_tool(tool_name, tool_input)
+            return JSONResponse(content=result)
+
+        print("\n🚀 MCP HTTP server running at http://127.0.0.1:8000 ...")
+        print("   • List tools:   GET  /tools/list")
+        print("   • Call a tool:  POST /tools/call {tool_name, tool_input}")
+        uvicorn.run(app, host="127.0.0.1", port=8000)
     else:
-        print(f"  Result: {result}")
+        print("=" * 60)
+        print("MCP Server — Tool Discovery & Test")
+        print("=" * 60)
 
-    # 3. Test get_ticket_info
-    print("\n🎫 Test: get_ticket_info")
-    ticket = dispatch_tool("get_ticket_info", {"ticket_id": "P1-LATEST"})
-    print(f"  Ticket: {ticket.get('ticket_id')} | {ticket.get('priority')} | {ticket.get('status')}")
-    if ticket.get("notifications_sent"):
-        print(f"  Notifications: {ticket['notifications_sent']}")
+        # 1. Discover tools
+        print("\n📋 Available Tools:")
+        for tool in list_tools():
+            print(f"  • {tool['name']}: {tool['description'][:60]}...")
 
-    # 4. Test check_access_permission
-    print("\n🔐 Test: check_access_permission (Level 3, emergency)")
-    perm = dispatch_tool("check_access_permission", {
-        "access_level": 3,
-        "requester_role": "contractor",
-        "is_emergency": True,
-    })
-    print(f"  can_grant: {perm.get('can_grant')}")
-    print(f"  required_approvers: {perm.get('required_approvers')}")
-    print(f"  emergency_override: {perm.get('emergency_override')}")
-    print(f"  notes: {perm.get('notes')}")
+        # 2. Test search_kb
+        print("\n🔍 Test: search_kb")
+        result = dispatch_tool("search_kb", {"query": "SLA P1 resolution time", "top_k": 2})
+        if result.get("chunks"):
+            for c in result["chunks"]:
+                print(f"  [{c.get('score', '?')}] {c.get('source')}: {c.get('text', '')[:70]}...")
+        else:
+            print(f"  Result: {result}")
 
-    # 5. Test invalid tool
-    print("\n❌ Test: invalid tool")
-    err = dispatch_tool("nonexistent_tool", {})
-    print(f"  Error: {err.get('error')}")
+        # 3. Test get_ticket_info
+        print("\n🎫 Test: get_ticket_info")
+        ticket = dispatch_tool("get_ticket_info", {"ticket_id": "P1-LATEST"})
+        print(f"  Ticket: {ticket.get('ticket_id')} | {ticket.get('priority')} | {ticket.get('status')}")
+        if ticket.get("notifications_sent"):
+            print(f"  Notifications: {ticket['notifications_sent']}")
 
-    print("\n✅ MCP server test done.")
-    print("\nTODO Sprint 3: Implement HTTP server nếu muốn bonus +2.")
+        # 4. Test check_access_permission
+        print("\n🔐 Test: check_access_permission (Level 3, emergency)")
+        perm = dispatch_tool("check_access_permission", {
+            "access_level": 3,
+            "requester_role": "contractor",
+            "is_emergency": True,
+        })
+        print(f"  can_grant: {perm.get('can_grant')}")
+        print(f"  required_approvers: {perm.get('required_approvers')}")
+        print(f"  emergency_override: {perm.get('emergency_override')}")
+        print(f"  notes: {perm.get('notes')}")
+
+        # 5. Test invalid tool
+        print("\n❌ Test: invalid tool")
+        err = dispatch_tool("nonexistent_tool", {})
+        print(f"  Error: {err.get('error')}")
+
+        print("\n✅ MCP server test done.")
+        print("\nChạy: python mcp_server.py --http để bật HTTP server (FastAPI). Bonus +2!")
