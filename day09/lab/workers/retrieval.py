@@ -8,6 +8,10 @@ _ROOT = str(Path(__file__).parents[3])  # /home/.../C401-F2-Lab08
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+_DAY08_LAB = str(Path(__file__).parents[3] / "day08" / "lab")
+if _DAY08_LAB not in sys.path:
+    sys.path.insert(0, _DAY08_LAB)
+
 TOP_K = 3
 
 def run(state: dict) -> dict:

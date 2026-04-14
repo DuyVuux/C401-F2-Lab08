@@ -1,37 +1,90 @@
-# Báo Cáo Cá Nhân — Sprint 2: Retrieval Worker
+# Báo Cáo Cá Nhân — Lab Day 09: Multi-Agent Orchestration
 
 **Họ và tên:** Vũ Đức Duy  
-**Vai trò:** Retrieval Worker Owner  
-**Sprint phụ trách:** Sprint 2 (Core Workers)  
+**Vai trò trong nhóm:** Worker Owner (Retrieval Worker) & Frontend-Backend Integrator  
+**Ngày nộp:** 14/04/2026  
+**Độ dài yêu cầu:** 500–800 từ
 
 ---
 
-## 1. Tóm tắt công việc đã thực hiện
+## 1. Tôi phụ trách phần nào? (100–150 từ)
 
-Trong vai trò là người chịu trách nhiệm cho module Retrieval Worker, tôi đã hoàn thiện file `workers/retrieval.py` để đóng gói logic truy xuất ngữ cảnh từ Day 08 thành một Worker hoạt động chuẩn chỉnh theo kiến trúc State Graph của Day 09. Cụ thể:
+**Module/file tôi chịu trách nhiệm:**
+- File chính: `workers/retrieval.py`, `frontend/components/ChatInterface.tsx` (tích hợp UI Frontend)
+- Functions tôi implement: Hàm `run(state)` cho Retrieval Worker, logic `_fallback_retrieve`, thiết lập kết nối Frontend (Next.js) gọi qua backend FastAPI (`POST /chat`).
 
-- **Khởi tạo wrapper function (`run`):** Tiếp nhận `AgentState`, trích xuất thông tin `task` và bọc hàm tìm kiếm `retrieve_dense` từ thư viện nhóm đã viết trước đó ở Day 08.
-- **Quản lý dữ liệu State & Truy vết (Traceability):** Đảm bảo bổ sung vào trường `workers_called` tên định danh `retrieval_worker`, trích xuất file nguồn vào danh sách `retrieved_sources` để Policy/Synthesis worker phía sau có thể trích dẫn. Các thông tin I/O cũng được push vào `worker_io_logs` và `history` để Quang Quí (Sprint 4) phục vụ việc đánh giá logic chạy (routing).
-- **Cơ chế Fallback (Tính bền bỉ):** Trong trường hợp `day08/lab` không thể được tải hoặc import gặp lỗi do path, tôi đã viết một hàm `_fallback_retrieve` để tự động load biến môi trường thông qua `dotenv`, mã hóa câu hỏi bằng `OpenAI` (`text-embedding-3-small`), và truy vấn trực tiếp vào database Vector ở local (`chroma_db`). Điều này đảm bảo Retrieval Worker không bao giờ break toàn bộ luồng chương trình.
-- **Kiểm thử độc lập:** Đã chạy thử độc lập file `workers/retrieval.py` trong `.venv` để chắc chắn nó xử lý chuẩn chỉnh cả 2 cấu hình (khi có và không có data), trong phương thức standalone return đúng số lượng `Chunks` và `Sources` cho SLA tickets.
+Với tư cách là Retrieval Worker Owner (Sprint 2), tôi đã xây dựng `workers/retrieval.py` để lấy dữ liệu ngữ cảnh (context) từ hệ thống Vector DB nội bộ và đưa vào State quản lý của đồ thị cho các worker tiếp theo. Đồng thời, dựa trên nội dung triển khai thực tế của dự án, tôi đảm nhận cả việc **tích hợp và test UI/UX** từ Next.js gọi trực tiếp API `localhost:8001/chat` để đảm bảo luồng hệ thống end-to-end từ người dùng đến Graph chạy trơn tru, hiển thị minh bạch các truy vết.
 
-## 2. Thách thức kỹ thuật & Cách giải quyết
+**Cách công việc của tôi kết nối với phần của thành viên khác:**
+Luồng của tôi cung cấp `retrieved_chunks` và `retrieved_sources` cốt lõi để Policy Worker (của Nam Sơn) check các quy định ngoại lệ và Synthesis Worker tổng hợp cấu trả lời cuối cùng. Việc xử lý thông suốt kết nối CORS và frontend đảm bảo mô hình Multi-Agent sở hữu giao diện người dùng hiển thị chân thực thay vì chỉ tương tác dòng lệnh ngầm.
 
-**Vấn đề 1: Lỗi thư viện và Import Path chéo giữa các thư mục (Dependency Hell)**  
-Day 08 và Day 09 được phát triển trên các hệ quy chiếu khác nhau (standalone vs Multi-Agent). Do đó, khi import `src.retrieval.rag_answer` từ Day 08, Python kernel throw `ModuleNotFoundError` và không tìm thấy môi trường `.venv` gốc chứa các biến `OPENAI_API_KEY`.
-**Giải pháp:** Tôi đã thiết lập một `.venv` dùng chung tại Root và tự viết lại logic `fallback` (sử dụng OpenAI thuần mà loại bỏ sự phụ thuộc `sentence-transformers` theo cấu hình mới của người dùng). Cơ chế bắt lỗi `try-except` trên đầu file worker đã giúp điều hướng luồng khi xảy ra lỗi. 
+**Bằng chứng:**
+- Các đoạn mã cấu hình `sys.path` và xử lý Try-Catch cập nhật trong `workers/retrieval.py`.
+- Sử dụng `fetch("http://localhost:8001/chat")` trong `ChatInterface.tsx`.
+- Nhật ký thực thi kiểm thử UI với các trace logs lưu tại `artifacts/traces/`.
 
-**Vấn đề 2: Tương thích Component State**  
-LangGraph yêu cầu truyền data liên hoàn nhưng nếu database rỗng, worker có thể trả về lỗi index `Out of range` hoặc làm ứng dụng crash. 
-**Giải pháp:** Trả về danh sách chunks rỗng `[]` và không làm crash hệ thống. Điều này để cho phép `synthesis.py` (của Nam Sơn) ghi nhận và đưa ra câu trả lời abstain.
+---
 
-## 3. Kiến thức học được (Key Learnings)
+## 2. Tôi đã ra một quyết định kỹ thuật gì? (150–200 từ)
 
-1. **State Injection trong Orchestration:** Việc bọc một tính năng cũ vào mô hình tác tử (Agent pattern) không chỉ là copy-paste mà còn phải đảm nhiệm tính toán log, error catching, và cập nhật I/O chuẩn định dạng mà Supervisor quy định.
-2. **Nguyên tắc "Fail Gracefully":** Luôn phải dự phòng phương án "hỏng hóc" (Fallback DB) hoặc nạp mock-data tạm để đảm bảo các worker sau chặn không bị treo chờ dữ liệu. Việc này rất quan trọng trong thiết kế Distributed System hoặc Microservices.
-3. **Traceability:** Quản lý nhật ký `state["history"]` ở từng trạm dừng đóng vai trò sống còn trong việc dò lỗi đường đi của Agent thay vì debug thủ công từng hàm.
+**Quyết định:** 
+Thực hiện chèn thư mục gốc của dự án thông qua `sys.path.insert(0, _ROOT)` trong Runtime của worker, đồng thời cập nhật biến môi trường qua `uv` thay vì copy-paste và viết lại toàn bộ core logic thuật toán tìm kiếm đa luồng (BM25 + Semantic) từ thư mục gốc của Day 08 sang một module độc lập ở Day 09. Hệ thống gọi thẳng vào `day08.lab.src.retrieval.rag_answer.retrieve_dense`.
 
-## 4. Góp ý cải tiến RAG Pipeline (Nếu có thêm thời gian)
+**Lý do:**
+Khai báo path hệ thống tại quá trình thực thi giúp tổ chức lại cấu trúc tái sử dụng, thừa kế hoàn toàn kỹ thuật tìm kiếm đỉnh cao (Hybrid Search & Reranking) từ đồ án RAG trước đó và tiết kiệm việc viết mã dư thừa theo nguyên tắc DRY (Don't Repeat Yourself). Lựa chọn thay thế là nhân bản code sẽ vi phạm Single Source of Truth, kéo theo viễn cảnh phải cấu hình siêu tham số (`top_k`, reranker models) ở song song hai hệ thống độc lập.
 
-- **Tích hợp Reranker nội tại vào Worker:** Thay vì chỉ kéo `retrieve_dense`, tôi sẽ implement thêm Cross-Encoder ngay tại Retrieval Worker để điểm số độ chính xác (Relevance Score) trả về cho State cao hơn, giúp Synthesis phân biệt được nhiễu.
-- **Tách biệt Metadata Vector Search:** Dùng query LLM để tách entity (như hạn mức tiền, SLA) trước khi query vào ChromaDB để tăng filter chính xác (Smart metadata filtering tool - MCP Tool) thay vì chỉ Semantic Search đơn thuần.
+**Trade-off đã chấp nhận:**
+Quyết định tái sử dụng tài nguyên đòi hỏi các packages ở môi trường nội bộ như `underthesea`, `rank_bm25` (phụ thuộc cũ của Day 08) phải có mặt trọn vẹn trong môi trường làm việc `.venv` này, dễ gây gián đoạn đường truyền nếu máy người phát triển thiếu cài đặt các gói library liên kết đó. Tôi chấp nhận rủi ro này và đưa ra phương án viết thêm logic `_fallback_retrieve` để đọc cơ sở dữ liệu Vector Database thô nếu không thể import thành công module RAG nâng cao.
+
+**Bằng chứng từ trace/code (workers/retrieval.py):**
+```python
+_ROOT = str(Path(__file__).parents[5])  # Dẫn về .../C401-F2-Lab08
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+# ... Exception Handler để invoke fallback
+```
+
+---
+
+## 3. Tôi đã sửa một lỗi gì? (150–200 từ)
+
+**Lỗi:** `ModuleNotFoundError` do không tìm thấy gói truy xuất `day08` tại gốc, lỗi trích xuất vì thư viện `underthesea` và `rank_bm25` chưa được cài đặt. Thêm vào đó, là lỗi gọi Back-End (CORS Blocked) phá vỡ luồng Frontend.
+
+**Symptom (pipeline làm gì sai?):**
+Trong quá trình truy vấn hệ thống qua đồ thị `graph.py` hay giao diện Next.js, worker phát sinh báo cảnh báo `ImportError` ở bước lấy ngữ cảnh. Hệ thống hoàn toàn phớt lờ những tiến bộ của RAG Pipeline Day 08 và chuyển thẳng về hàm dự phòng. Nguy hiểm hơn, UI gửi phương thức `POST /chat` liên tục trả về trạng thái lỗi `CORS Policies` (port 3001 gọi 8001 thất bại).
+
+**Root cause (lỗi nằm ở đâu):**
+Lỗi phân mảnh cấu hình: Môi trường (Dependencies) của dự án Day 09 không ánh xạ với chuẩn Day 08 (đặc biệt thiếu các package tokenization phục vụ Sparse Retrieval). Điểm chết thứ hai nằm ở Middleware FastAPI mặc định không cho phép kết nối liên miền chéo (Cross-Origin Resource Sharing) đến React.
+
+**Cách sửa:**
+- Dependencies: Tiêm thủ công gói thiếu thông qua lệnh `uv pip install underthesea rank_bm25` trên Virtual Environment `.venv` của dự án để đảm bảo pipeline tái sử dụng hoạt động nhạy bén. 
+- API/Frontend: Định nghĩa CORS Origin cấp cho phép `"http://localhost:3001"` bằng `CORSMiddleware` bên trong file `mcp_server.py`. Tôi cũng thay đổi mock data cũ của template React bằng kỹ thuật `fetch API` thực để đón tải JSON của máy chủ LLM phục hồi trải nghiệm tương tác với Chat UI chuẩn mực.
+
+**Bằng chứng trước/sau:**
+- Trước khi sửa: Console trả về báo lỗi `500 Server Error` (do Import RAG thất bại), Trình duyệt block `POST /chat`, hệ thống truy vấn "trả về rỗng" nếu ChromaDB cũ không load.
+- Sau khi sửa: Luồng API trả về Status HTTP 200/OK, `retrieved_chunks` phân định đúng định dạng và có ghi nhận `workers_called: ["retrieval_worker"]`. Next.js nhận tín hiệu thành công và in lời giải đáp rõ ràng từ Synth Worker.
+
+---
+
+## 4. Tôi tự đánh giá đóng góp của mình (100–150 từ)
+
+**Tôi làm tốt nhất ở điểm nào?**
+Tôi đã hoàn thành thành công vai trò của một Integrator ở cả Data backend (Retrieval state) lẫn bề mặt Application (Next.js - FastAPI). Khả năng xử lý các rào cản kỹ thuật cứng về môi trường và Dependency (Path configs, .venv mismatch) chứng minh tính cơ động, không ngại debug để duy trì sự trọn vẹn chất lượng từ Day 08 đến Day 09. 
+
+**Tôi làm chưa tốt hoặc còn yếu ở điểm nào?**
+Do đặc thù phải mở rộng quá nhiều ra luồng hệ thống ở Frontend và Core Graph API, tôi chưa dành được lượng thời gian tối ưu để kiểm thử số liệu định lượng về Indexing ở node Retrieval cho đánh giá RAG nâng cao (Recall/MRR evaluation) một cách chuyên sâu. Tính năng UI đang dừng ở trạng thái Loading và hiển thị tĩnh Block (thay vì Server-Sent Events Streaming Text tốc độ cao).
+
+**Nhóm phụ thuộc vào tôi ở đâu?** 
+Cụm trả lời của Synthesis Worker sẽ không có context ngữ cảnh nếu Retrieval Worker của tôi không gửi `retrieved_chunks`. Cùng đó, toàn bộ phần nhìn, kiểm định UI end-to-end sẽ treo chặn chéo nếu Frontend chưa gắn với Pipeline API backend như đã xử lý được.
+
+**Phần tôi phụ thuộc vào thành viên khác:**
+Tôi hoàn toàn dựa vào cấu trúc đồ thị luồng tổng (`graph.py`) cùng cơ chế Route chuẩn của Gia Bách để có thể tiêm input chuẩn. Tín hiệu trả về cho End-User cũng phụ thuộc vào Node Synthesis của Nam Sơn phản ứng chính xác dựa vào dữ liệu Worker Retrieval.
+
+---
+
+## 5. Nếu có thêm 2 giờ, tôi sẽ làm gì? (50–100 từ)
+
+**Cải tiến:** Tích hợp Query Transformation (như HyDE - Hypothetical Document Embeddings hoặc Multi-Query decomposition) vào chu trình của `retrieval_worker`, xử lý câu lệnh người dùng trước khi cấp cho RAG. Đồng thời đẩy mạnh luồng truyền dữ liệu theo kiểu Streaming SSR cho web UI Next.js.
+
+**Lý do:** Trace cho thấy các câu hỏi mơ hồ sẽ dễ khiến cơ chế Semantic Search và thuật toán gốc gãy nhịp phân tích -> Synthesis Worker phải "Abstain" (khi context nghèo hoặc rỗng). Kỹ thuật HyDE sẽ cho LLM sinh trước giả thuyết nâng tỉ lệ Recall đầu vào hệ thống Vector. Giao diện Streaming SSR sẽ triệt để xoá bỏ hiện tượng "đợi chờ vòng xoay" khi Agent chần chừ kéo Document, thay đổi đáng kể User Experience.
