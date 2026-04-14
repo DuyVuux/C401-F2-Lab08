@@ -124,7 +124,9 @@ def route_decision(state: AgentState) -> Literal["retrieval_worker", "policy_too
     Trả về tên worker tiếp theo dựa vào supervisor_route trong state.
     Đây là conditional edge của graph.
     """
-    if state.get("hitl_triggered") or state.get("risk_high"):
+    # HITL chỉ khi đã trigger hoặc risk_high mà không có route rõ ràng
+    # Policy worker vẫn xử lý được emergency — HITL sau khi synthesis nếu confidence thấp
+    if state.get("hitl_triggered"):
         return "human_review"
     return state.get("supervisor_route", "retrieval_worker")
 
