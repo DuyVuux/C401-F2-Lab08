@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+chroma_db/
+**/chroma_db/
+
+.DS_Store
+Thumbs.db
+
+# Trace files từ test thủ công — chỉ commit trace chính thức từ eval_trace.py
+# Bỏ dòng dưới khi sẵn sàng commit trace chính thức
+artifacts/traces/

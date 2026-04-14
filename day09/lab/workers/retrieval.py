@@ -53,7 +53,10 @@ def _fallback_retrieve(task: str) -> list:
 
         db_path = Path(__file__).parents[1] / "chroma_db"
         client = chromadb.PersistentClient(path=str(db_path))
-        col = client.get_collection("day09_docs")
+        # Try Day 09 collection first, fallback to Day 08
+        existing = [c.name for c in client.list_collections()]
+        col_name = "day09_docs" if "day09_docs" in existing else "rag_lab"
+        col = client.get_collection(col_name)
 
         openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         embedding = openai_client.embeddings.create(
