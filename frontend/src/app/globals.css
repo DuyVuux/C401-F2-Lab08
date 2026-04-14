@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 11, 15, 25;
+  --background-end-rgb: 11, 15, 25;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  /* Override default Next.js theme specifically setting it to the UX dark theme background */
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply bg-pane backdrop-blur-xl border border-white/10 shadow-glass;
+  }
+}
