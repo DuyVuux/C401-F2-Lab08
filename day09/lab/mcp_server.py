@@ -347,12 +347,21 @@ if __name__ == "__main__":
         try:
             from fastapi import FastAPI, Request
             from fastapi.responses import JSONResponse
+            from fastapi.middleware.cors import CORSMiddleware
             import uvicorn
         except ImportError:
             print("FastAPI/uvicorn chưa được cài đặt. Cài bằng: pip install fastapi uvicorn")
             sys.exit(1)
 
         app = FastAPI(title="Mock MCP Server", description="MCP tool discovery & execution API", version="1.0")
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
         @app.get("/tools/list")
         async def api_list_tools():
@@ -366,10 +375,31 @@ if __name__ == "__main__":
             result = dispatch_tool(tool_name, tool_input)
             return JSONResponse(content=result)
 
-        print("\n🚀 MCP HTTP server running at http://127.0.0.1:8000 ...")
+        @app.post("/chat")
+        async def api_chat(request: Request):
+            body = await request.json()
+            task = body.get("task", "")
+            try:
+                # Import lazy to avoid circular dependency or import errors when graph isn't needed
+                import sys, os
+                sys.path.insert(0, os.path.dirname(__file__))
+                from graph import run_graph
+                result = run_graph(task)
+                return JSONResponse(content={
+                    "final_answer": result.get("final_answer", ""),
+                    "sources": result.get("sources", []),
+                    "confidence": result.get("confidence", 0.0),
+                    "latency_ms": result.get("latency_ms", 0),
+                    "route": result.get("supervisor_route", "")
+                })
+            except Exception as e:
+                return JSONResponse(status_code=500, content={"error": str(e)})
+
+        print("\n🚀 MCP HTTP server running at http://127.0.0.1:8001 ...")
         print("   • List tools:   GET  /tools/list")
         print("   • Call a tool:  POST /tools/call {tool_name, tool_input}")
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        print("   • Chat agent:   POST /chat {task}")
+        uvicorn.run(app, host="127.0.0.1", port=8001)
     else:
         print("=" * 60)
         print("MCP Server — Tool Discovery & Test")

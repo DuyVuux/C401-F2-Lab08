@@ -14,28 +14,54 @@ export function ChatInterface() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, currentPhase]);
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     // 1. Add User Message
     addMessage({ id: Date.now().toString(), role: 'user', content });
     
-    // 2. Trigger Agent Pipeline (Demo behavior)
+    // 2. Trigger Agent Pipeline
     setPhase('routing');
     
-    // Simulate delays & state changes
-    setTimeout(() => setPhase('retrieval'), 1500);
-    setTimeout(() => setPhase('synthesizing'), 3500);
-    setTimeout(() => {
+    try {
+      // Simulate slightly distinct phases for UX, while waiting for real backend
+      const phaseTimers = [
+        setTimeout(() => setPhase('retrieval'), 1000),
+        setTimeout(() => setPhase('synthesizing'), 2000)
+      ];
+
+      const res = await fetch('http://localhost:8001/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: content })
+      });
+
+      phaseTimers.forEach(clearTimeout);
+
+      if (!res.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await res.json();
+      
       setPhase('idle');
       addMessage({
         id: (Date.now() + 1).toString(),
         role: 'agent',
-        content: `Tôi đã kiểm tra dữ liệu từ Knowledge Base. Theo quy trình hiện tại, hệ thống báo lỗi này liên quan đến VPN Gateway.\n\nVui lòng thử kết nối lại bằng server dự phòng hoặc khởi động lại client.`,
-        citations: [
-           { id: 'doc_vpn_01', label: 'Quy trình xử lý sự cố VPN v2.1' },
-           { id: 'doc_network_03', label: 'IT-Helpdesk Manual' }
-        ]
+        content: data.final_answer || "Tôi không thể tìm thấy câu trả lời.",
+        citations: (data.sources || []).map((src: string, i: number) => ({
+           id: `doc_${i}`,
+           label: src
+        }))
       });
-    }, 5500);
+    } catch (error) {
+      console.error("Chat API error:", error);
+      setPhase('error');
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        role: 'agent',
+        content: "Xin lỗi hệ thống đang gặp sự cố. Không kết nối được với server backend.",
+      });
+      setTimeout(() => setPhase('idle'), 2000);
+    }
   };
 
   return (
