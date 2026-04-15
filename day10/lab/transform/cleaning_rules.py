@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -111,8 +112,43 @@ def clean_rows(
             )
             continue
 
+        exported_at_raw = raw.get("exported_at", "")
+        exported_at_norm = exported_at_raw.strip()
+        if not exported_at_norm:
+            # metric_impact: quarantines records that lack exported_at so `exported_at_not_empty` expectation
+            # or future metric table can cite the jump in quarantine_records when raw data misses export timestamps.
+            quarantine.append({**raw, "reason": "missing_exported_at"})
+            continue
+        try:
+            exported_at_norm = datetime.fromisoformat(exported_at_norm).isoformat()
+        except ValueError:
+            # metric_impact: invalid formats now push to quarantine, giving a measurable delta when corrupt exports
+            # inject non-ISO timestamps (to show the new rule is not trivial).
+            quarantine.append(
+                {**raw, "reason": "invalid_exported_at_format", "exported_at_raw": exported_at_raw}
+            )
+            continue
+        if eff_norm and exported_at_norm < eff_norm:
+            # metric_impact: catches exports dated before the policy becomes effective, so corrupt dumps raise
+            # quarantine_records and can be referenced later in the group's metric_impact table.
+            quarantine.append(
+                {
+                    **raw,
+                    "reason": "exported_before_effective_date",
+                    "effective_date_normalized": eff_norm,
+                    "exported_at_normalized": exported_at_norm,
+                }
+            )
+            continue
+
         if not text:
             quarantine.append({**raw, "reason": "missing_chunk_text"})
+            continue
+
+        if len(text.strip()) < 20:
+            # metric_impact: quarantines tiny placeholder chunks so quarantine_records spikes when bad,
+            # showing measurable delta during inject/test runs that add short junk text.
+            quarantine.append({**raw, "reason": "chunk_text_too_short"})
             continue
 
         key = _norm_text(text)
@@ -128,7 +164,7 @@ def clean_rows(
                     "14 ngày làm việc",
                     "7 ngày làm việc",
                 )
-                fixed_text += " [cleaned: stale_refund_window]"
+            fixed_text += " [cleaned: stale_refund_window]"
 
         seq += 1
         cleaned.append(
@@ -137,7 +173,7 @@ def clean_rows(
                 "doc_id": doc_id,
                 "chunk_text": fixed_text,
                 "effective_date": eff_norm,
-                "exported_at": exported_at or "",
+                "exported_at": exported_at_norm,
             }
         )
 
