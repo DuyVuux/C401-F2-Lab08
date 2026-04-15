@@ -1,106 +1,141 @@
-import json
-import logging
-from pathlib import Path
-from typing import Dict, Any, List
+"""
+embed_pipeline.py — Sprint 2a (Vũ Đức Duy)
+Module embed độc lập dùng OpenAI text-embedding-3-small (thay vì SentenceTransformer của baseline).
 
-import chromadb
-from openai import OpenAI
+Đọc cleaned CSV từ artifacts/cleaned/ (output của etl_pipeline.py run),
+upsert vào collection day10_kb (cùng collection với etl_pipeline.py để grading_run.py
+và eval_retrieval.py tìm thấy data).
+
+Idempotent: upsert theo chunk_id + prune id cũ không còn trong cleaned CSV.
+
+Chạy:
+    python transform/embed_pipeline.py
+    python transform/embed_pipeline.py --run-id sprint2a --cleaned artifacts/cleaned/cleaned_<run_id>.csv
+"""
+
+import argparse
+import csv
+import logging
+import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-logging.basicConfig(level=logging.ERROR, format="%(levelname)s: %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-CLEANED_INPUT = Path(__file__).parent.parent / "artifacts" / "cleaned_records.jsonl"
-CHROMA_PATH = Path(__file__).parent.parent / "chroma_db"
-COLLECTION = "day10_docs"
+ROOT = Path(__file__).resolve().parent.parent
+CHROMA_PATH = os.environ.get("CHROMA_DB_PATH", str(ROOT / "chroma_db"))
+COLLECTION = os.environ.get("CHROMA_COLLECTION", "day10_kb")
+EMBEDDING_MODEL = "text-embedding-3-small"
 
-def chunk_record(record: Dict[str, Any], max_length: int = 1000) -> List[Dict[str, Any]]:
-    content = record.get("content", "")
-    if not content:
-        content = json.dumps(record, ensure_ascii=False)
-        
-    doc_id = record.get("doc_id", "")
-    effective_date = record.get("effective_date", "")
-    source = record.get("source", "")
-    
-    chunks = [content[i:i + max_length] for i in range(0, len(content), max_length)] if content else [""]
-    
-    return [
-        {
-            "chunk_id": f"{doc_id}_{idx}" if doc_id else f"unknown_{idx}",
-            "text": chunk,
-            "metadata": {
-                "effective_date": str(effective_date) if effective_date else "",
-                "source": str(source) if source else "",
-                "doc_id": str(doc_id) if doc_id else ""
-            }
-        }
-        for idx, chunk in enumerate(chunks)
-    ]
 
-def embed_and_upsert(run_id: str = "") -> None:
+def _latest_cleaned_csv() -> Path | None:
+    """Tìm file cleaned CSV mới nhất trong artifacts/cleaned/."""
+    clean_dir = ROOT / "artifacts" / "cleaned"
+    csvs = sorted(
+        [f for f in clean_dir.glob("cleaned_*.csv") if "smoke" not in f.name],
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+    return csvs[0] if csvs else None
+
+
+def load_cleaned_csv(path: Path) -> list[dict]:
+    rows = []
+    with path.open(encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            rows.append({k: (v or "").strip() for k, v in r.items()})
+    return rows
+
+
+def embed_and_upsert(cleaned_csv: Path | None = None, run_id: str = "embed_pipeline") -> dict:
+    import chromadb
+    from openai import OpenAI
+
+    # Resolve cleaned CSV
+    if cleaned_csv is None:
+        cleaned_csv = _latest_cleaned_csv()
+    if cleaned_csv is None or not cleaned_csv.is_file():
+        logger.error("Không tìm thấy cleaned CSV. Chạy etl_pipeline.py run trước.")
+        return {}
+
+    rows = load_cleaned_csv(cleaned_csv)
+    if not rows:
+        logger.warning("Cleaned CSV rỗng — không embed.")
+        return {}
+
+    logger.info(f"cleaned_csv={cleaned_csv.name} rows={len(rows)}")
+
+    # Init ChromaDB + collection (cùng collection với etl_pipeline.py)
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
+    col = client.get_or_create_collection(name=COLLECTION)
+
+    # Prune: xóa chunk_id không còn trong cleaned CSV (idempotency)
+    current_ids = [r["chunk_id"] for r in rows]
     try:
-        client = chromadb.PersistentClient(path=str(CHROMA_PATH))
-        collection = client.get_or_create_collection(name=COLLECTION)
-        openai_client = OpenAI()
+        prev = col.get(include=[])
+        prev_ids = set(prev.get("ids") or [])
+        drop = sorted(prev_ids - set(current_ids))
+        if drop:
+            col.delete(ids=drop)
+            logger.info(f"embed_prune_removed={len(drop)}")
     except Exception as e:
-        logger.error(f"Initialization fallback: {e}")
-        return
-        
-    chunks_to_upsert = []
-    
-    if CLEANED_INPUT.exists():
-        with open(CLEANED_INPUT, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    try:
-                        record = json.loads(line)
-                        chunks_to_upsert.extend(chunk_record(record))
-                    except json.JSONDecodeError as e:
-                        logger.error(f"JSON schema error: {e}")
-                    
-    if not chunks_to_upsert:
-        return
+        logger.warning(f"Prune skip: {e}")
 
-    texts = [c["text"] for c in chunks_to_upsert]
-    ids = [c["chunk_id"] for c in chunks_to_upsert]
-    
-    metadatas = []
-    for c in chunks_to_upsert:
-        meta = dict(c["metadata"])
-        meta["run_id"] = run_id
-        metadatas.append(meta)
+    # Embed từng row với OpenAI
+    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    ids, documents, metadatas, embeddings = [], [], [], []
 
-    embeddings = []
-    valid_indices = []
-    
-    for idx, text in enumerate(texts):
+    for r in rows:
+        chunk_id = r.get("chunk_id", "")
+        text = r.get("chunk_text", "")
+        if not chunk_id or not text:
+            continue
         try:
-            response = openai_client.embeddings.create(
-                input=text,
-                model="text-embedding-3-small"
-            )
-            embeddings.append(response.data[0].embedding)
-            valid_indices.append(idx)
+            resp = openai_client.embeddings.create(input=text, model=EMBEDDING_MODEL)
+            ids.append(chunk_id)
+            documents.append(text)
+            metadatas.append({
+                "doc_id": r.get("doc_id", ""),
+                "effective_date": r.get("effective_date", ""),
+                "run_id": run_id,
+            })
+            embeddings.append(resp.data[0].embedding)
         except Exception as e:
-            logger.error(f"OpenAI fallback for {ids[idx]}: {e}")
+            logger.error(f"Embed failed for {chunk_id}: {e}")
 
-    if embeddings:
-        final_ids = [ids[i] for i in valid_indices]
-        final_texts = [texts[i] for i in valid_indices]
-        final_metas = [metadatas[i] for i in valid_indices]
-        
-        try:
-            collection.upsert(
-                ids=final_ids,
-                embeddings=embeddings,
-                metadatas=final_metas,
-                documents=final_texts
-            )
-        except Exception as e:
-            logger.error(f"Chroma DB upsert error: {e}")
+    if not ids:
+        logger.error("Không có chunk nào được embed thành công.")
+        return {}
+
+    col.upsert(ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings)
+    result = {
+        "run_id": run_id,
+        "cleaned_csv": str(cleaned_csv.name),
+        "chunks_upserted": len(ids),
+        "collection": COLLECTION,
+    }
+    logger.info(f"embed_upsert count={len(ids)} collection={COLLECTION}")
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Embed cleaned CSV → ChromaDB (OpenAI)")
+    parser.add_argument("--cleaned", default=None, help="Path tới cleaned CSV (mặc định: tìm file mới nhất)")
+    parser.add_argument("--run-id", default="embed_pipeline", help="Run ID để ghi vào metadata")
+    args = parser.parse_args()
+
+    cleaned = Path(args.cleaned) if args.cleaned else None
+    result = embed_and_upsert(cleaned_csv=cleaned, run_id=args.run_id)
+    if result:
+        print(result)
+        return 0
+    return 1
+
 
 if __name__ == "__main__":
-    embed_and_upsert(run_id="manual_run")
+    raise SystemExit(main())
