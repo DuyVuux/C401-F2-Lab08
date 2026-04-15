@@ -41,10 +41,11 @@ _________________
 
 ### 2a. Bảng metric_impact (bắt buộc — chống trivial)
 
-| Rule / Expectation mới (tên ngắn) | Trước (số liệu) | Sau / khi inject (số liệu) | Chứng cứ (log / CSV / commit) |
-|-----------------------------------|------------------|-----------------------------|-------------------------------|
-| … | … | … | … |
-
+| Rule / Expectation | Before inject | After inject | Chứng cứ |
+|--------------------|--------------|--------------|-----------|
+| `refund_no_stale_14d_window` (E3) | PASS | FAIL (violations=1) | log `run_id=inject-bad` |
+| `q_refund_window` retrieval | `hits_forbidden=no` | `hits_forbidden=yes` | `eval_inject_bad.csv` |
+| `chunk_id_unique` | PASS | PASS | log `run_id=inject-bad` |
 **Rule chính (baseline + mở rộng):**
 
 - …
